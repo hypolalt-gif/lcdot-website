@@ -2,7 +2,7 @@ require('dotenv').config();
 const express = require('express');
 const axios = require('axios');
 const session = require('express-session');
-const MongoStore = require('connect-mongo'); // Fixed import for connect-mongo
+const { MongoStore } = require('connect-mongo'); // Fixed import for connect-mongo
 const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
