@@ -3,165 +3,205 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LCDOT Command Center</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { navy: '#0B1120', navyLight: '#151E32', gold: '#D4AF37', goldHover: '#b5952f' },
-                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] }
-                }
-            }
-        }
-    </script>
+    <title>LCDOT Portal | Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0B1120; color: #E2E8F0; }
-        ::-webkit-scrollbar { width: 8px; }
-        ::-webkit-scrollbar-track { background: #0B1120; }
-        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 4px; }
-        .glass-panel { background: rgba(21, 30, 50, 0.8); border: 1px solid rgba(212, 175, 55, 0.15); backdrop-filter: blur(12px); }
+        :root {
+            --sidebar-bg: #0F172A;
+            --sidebar-hover: #1E293B;
+            --main-bg: #F1F5F9;
+            --text-main: #0F172A;
+            --text-muted: #64748B;
+            --gold: #D97706;
+            --border: #CBD5E1;
+            --card-bg: #FFFFFF;
+            --success: #16A34A;
+            --danger: #DC2626;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; background: var(--main-bg); color: var(--text-main); }
+
+        /* Sidebar */
+        .sidebar { width: 260px; background: var(--sidebar-bg); color: #94A3B8; display: flex; flex-direction: column; flex-shrink: 0; }
+        .sidebar-header { padding: 1.5rem; border-bottom: 1px solid #334155; text-align: center; }
+        .sidebar-header h1 { color: white; font-size: 1.1rem; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        .sidebar-nav { flex: 1; padding: 1rem 0; overflow-y: auto; }
+        .nav-btn { display: block; width: 100%; text-align: left; padding: 0.875rem 1.5rem; background: none; border: none; color: #94A3B8; font-family: inherit; font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: all 0.2s; border-left: 4px solid transparent; }
+        .nav-btn:hover { background: var(--sidebar-hover); color: white; }
+        .nav-btn.active { background: var(--sidebar-hover); color: var(--gold); border-left-color: var(--gold); }
+        .sidebar-footer { padding: 1rem; border-top: 1px solid #334155; }
+        .logout-btn { display: block; text-align: center; background: rgba(220, 38, 38, 0.1); color: #F87171; padding: 0.75rem; text-decoration: none; font-weight: 600; border-radius: 4px; font-size: 0.9rem; transition: background 0.2s; }
+        .logout-btn:hover { background: var(--danger); color: white; }
+
+        /* Main Content */
+        .main-content { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
+        .topbar { background: var(--card-bg); border-bottom: 1px solid var(--border); padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .user-info img { width: 40px; height: 40px; border-radius: 50%; border: 2px solid var(--gold); object-fit: cover; }
+        .user-info h2 { font-size: 1rem; font-weight: 600; }
+        .user-info p { font-size: 0.8rem; color: var(--gold); font-weight: 600; }
+        .stat-box { text-align: right; }
+        .stat-box p { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); font-weight: 600; }
+        .stat-box h3 { font-size: 1.25rem; font-weight: 700; }
+
+        .content-area { padding: 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .page-title { font-size: 1.5rem; font-weight: 700; margin-bottom: 1.5rem; color: var(--text-main); border-bottom: 2px solid var(--border); padding-bottom: 0.5rem; }
+        
+        /* Tabs */
         .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .tab-content.active { display: block; }
+
+        /* Cards */
+        .card { background: var(--card-bg); border: 1px solid var(--border); border-radius: 4px; padding: 1.5rem; margin-bottom: 1.5rem; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+        .card h3 { font-size: 1.1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-main); }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; background: var(--card-bg); border: 1px solid var(--border); }
+        th, td { padding: 1rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th { background: #F8FAFC; font-weight: 600; color: var(--text-muted); text-transform: uppercase; font-size: 0.75rem; letter-spacing: 0.5px; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #F8FAFC; }
+
+        /* Buttons */
+        .btn { display: inline-block; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.875rem; border-radius: 4px; border: none; cursor: pointer; transition: background 0.2s; font-family: inherit; text-align: center; }
+        .btn-green { background: var(--success); color: white; }
+        .btn-green:hover { background: #15803D; }
+        .btn-red { background: var(--danger); color: white; }
+        .btn-red:hover { background: #B91C1C; }
+        
+        /* Forms */
+        input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 0.9rem; margin-bottom: 1rem; background: #F8FAFC; }
+        input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); background: white; }
+
+        /* Timer */
+        .timer { font-family: monospace; font-size: 2.5rem; font-weight: 700; color: var(--text-main); text-align: center; margin: 1.5rem 0; }
+
+        .status-badge { padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 700; border-radius: 4px; text-transform: uppercase; }
+        .status-active { background: #DCFCE7; color: #166534; }
+        .status-suspended { background: #FEE2E2; color: #991B1B; }
+
+        /* Utility */
+        .hidden { display: none !important; }
     </style>
 </head>
-<body class="flex h-screen overflow-hidden font-sans">
-    
+<body>
+
     <!-- Sidebar -->
-    <aside class="w-64 glass-panel flex flex-col border-r border-gold/20 z-20">
-        <div class="h-20 flex items-center justify-center border-b border-gold/20">
-            <h1 class="font-serif text-xl font-bold text-gold tracking-widest">LCDOT PORTAL</h1>
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1>LCDOT Portal</h1>
         </div>
-        <nav class="flex-1 overflow-y-auto py-4">
-            <button onclick="switchTab('dashboard', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition active-tab">
-                <span class="font-semibold">Dashboard</span>
-            </button>
-            <button onclick="switchTab('shifts', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
-                <span class="font-semibold">Shift Management</span>
-            </button>
-            <button onclick="switchTab('profile', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
-                <span class="font-semibold">My Profile</span>
-            </button>
-            <button onclick="switchTab('roster', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
-                <span class="font-semibold">Personnel Directory</span>
-            </button>
-            <button onclick="switchTab('divisions', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
-                <span class="font-semibold">Divisional Apps</span>
-            </button>
-            <button onclick="switchTab('admin', this)" id="nav-admin" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition hidden">
-                <span class="font-semibold text-red-400">Administration</span>
-            </button>
+        <nav class="sidebar-nav">
+            <button onclick="switchTab('dashboard', this)" class="nav-btn active">Overview</button>
+            <button onclick="switchTab('shifts', this)" class="nav-btn">Shift Management</button>
+            <button onclick="switchTab('profile', this)" class="nav-btn">My Profile</button>
+            <button onclick="switchTab('roster', this)" class="nav-btn">Personnel Directory</button>
+            <button onclick="switchTab('divisions', this)" class="nav-btn">Divisional Apps</button>
+            <button onclick="switchTab('admin', this)" id="nav-admin" class="nav-btn hidden">Administration</button>
         </nav>
-        <div class="p-4 border-t border-gold/20">
-            <a href="/logout" class="block text-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white py-2 rounded transition">Secure Logout</a>
+        <div class="sidebar-footer">
+            <a href="/logout" class="logout-btn">Sign Out</a>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 overflow-y-auto relative">
-        <header class="glass-panel h-20 flex items-center justify-between px-8 sticky top-0 z-10 border-b border-gold/20">
-            <div class="flex items-center gap-4">
-                <img id="user-avatar" src="" class="w-10 h-10 rounded-full border border-gold">
+    <main class="main-content">
+        <header class="topbar">
+            <div class="user-info">
+                <img id="user-avatar" src="" alt="User">
                 <div>
-                    <h2 class="text-white font-bold" id="user-name">Loading...</h2>
-                    <p class="text-xs text-gold" id="user-rank">Loading...</p>
+                    <h2 id="user-name">Loading...</h2>
+                    <p id="user-rank">Loading...</p>
                 </div>
             </div>
-            <div class="text-right">
-                <p class="text-xs text-gray-400 uppercase tracking-widest">Total Hours</p>
-                <p class="text-2xl font-bold text-white" id="total-hours">0.0</p>
+            <div class="stat-box">
+                <p>Total Hours</p>
+                <h3 id="total-hours">0.0</h3>
             </div>
         </header>
 
-        <div class="p-8 max-w-6xl mx-auto">
+        <div class="content-area">
+            
             <!-- Dashboard Tab -->
             <div id="tab-dashboard" class="tab-content active">
-                <h3 class="font-serif text-3xl text-gold mb-6">Command Overview</h3>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                    <div class="glass-panel p-6 rounded-lg">
-                        <p class="text-gray-400 text-sm">System Status</p>
-                        <p class="text-green-400 font-bold text-xl mt-2">Operational</p>
-                    </div>
-                    <div class="glass-panel p-6 rounded-lg">
-                        <p class="text-gray-400 text-sm">Current Shift</p>
-                        <p class="text-white font-bold text-xl mt-2" id="shift-status">Off Duty</p>
-                    </div>
-                    <div class="glass-panel p-6 rounded-lg">
-                        <p class="text-gray-400 text-sm">Announcements</p>
-                        <p class="text-gold font-bold text-xl mt-2">Check Discord</p>
-                    </div>
+                <h2 class="page-title">Overview</h2>
+                <div class="card">
+                    <h3>System Status</h3>
+                    <p style="color: var(--text-muted);">Welcome to the Lakeview City DOT internal portal. Select a module from the sidebar to begin operations.</p>
                 </div>
             </div>
 
             <!-- Shift Tab -->
             <div id="tab-shifts" class="tab-content">
-                <h3 class="font-serif text-3xl text-gold mb-6">Shift Management</h3>
-                <div class="glass-panel p-8 rounded-xl max-w-xl">
-                    <div class="text-center mb-8">
-                        <p class="text-gray-400 mb-2">Live Timer</p>
-                        <p class="text-5xl font-mono text-white" id="timer">00:00:00</p>
-                    </div>
-                    <div class="flex gap-4">
-                        <button onclick="clockIn()" id="btn-in" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded transition">Clock In</button>
-                        <button onclick="clockOut()" id="btn-out" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded transition hidden">Clock Out</button>
+                <h2 class="page-title">Shift Management</h2>
+                <div class="card" style="max-width: 500px; margin: 0 auto;">
+                    <h3 style="text-align: center;">Active Shift Timer</h3>
+                    <div class="timer" id="timer">00:00:00</div>
+                    <div style="display: flex; gap: 1rem;">
+                        <button onclick="clockIn()" id="btn-in" class="btn btn-green" style="flex:1;">Clock In</button>
+                        <button onclick="clockOut()" id="btn-out" class="btn btn-red hidden" style="flex:1;">Clock Out</button>
                     </div>
                 </div>
             </div>
 
             <!-- Profile Tab -->
             <div id="tab-profile" class="tab-content">
-                <h3 class="font-serif text-3xl text-gold mb-6">Service Record</h3>
-                <div class="glass-panel p-8 rounded-xl">
-                    <div class="flex items-center gap-6 mb-8 border-b border-gray-700 pb-8">
-                        <img id="profile-avatar" src="" class="w-24 h-24 rounded-full border-2 border-gold">
+                <h2 class="page-title">Service Record</h2>
+                <div class="card">
+                    <div style="display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
+                        <img id="profile-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--border);">
                         <div>
-                            <h2 class="text-2xl font-bold text-white" id="profile-name">Loading</h2>
-                            <p class="text-gold" id="profile-rank">Loading</p>
+                            <h2 id="profile-name" style="font-size: 1.5rem; font-weight: 700;">Loading</h2>
+                            <p id="profile-rank" style="color: var(--gold); font-weight: 600;">Loading</p>
                         </div>
                     </div>
-                    <h4 class="text-white font-bold mb-4">Divisional Applications</h4>
-                    <div id="profile-certs" class="space-y-3"></div>
+                    <h3 style="margin-bottom: 1rem;">Divisional Applications</h3>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Division</th>
+                                <th>Status</th>
+                                <th>Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="profile-certs"></tbody>
+                    </table>
                 </div>
             </div>
 
             <!-- Roster Tab -->
             <div id="tab-roster" class="tab-content">
-                <div class="flex justify-between items-center mb-6">
-                    <h3 class="font-serif text-3xl text-gold">Personnel Directory</h3>
-                    <input type="text" id="roster-search" placeholder="Search..." class="bg-navyLight border border-gray-600 rounded px-4 py-2 text-white focus:outline-none focus:border-gold">
-                </div>
-                <div class="glass-panel rounded-xl overflow-hidden">
-                    <table class="w-full text-left">
-                        <thead class="bg-navyLight border-b border-gray-700">
+                <h2 class="page-title">Personnel Directory</h2>
+                <div class="card">
+                    <table>
+                        <thead>
                             <tr>
-                                <th class="p-4 text-gray-400 font-semibold">Name</th>
-                                <th class="p-4 text-gray-400 font-semibold">Rank</th>
-                                <th class="p-4 text-gray-400 font-semibold">Hours</th>
-                                <th class="p-4 text-gray-400 font-semibold">Status</th>
+                                <th>Employee</th>
+                                <th>Rank</th>
+                                <th>Total Hours</th>
+                                <th>Status</th>
                             </tr>
                         </thead>
-                        <tbody id="roster-body" class="divide-y divide-gray-800"></tbody>
+                        <tbody id="roster-body"></tbody>
                     </table>
                 </div>
             </div>
-            
-            <!-- Divisions Tab (App Grading) -->
+
+            <!-- Divisions Tab -->
             <div id="tab-divisions" class="tab-content">
-                <h3 class="font-serif text-3xl text-gold mb-6">Divisional Applications</h3>
-                <div class="glass-panel p-8 rounded-xl">
-                    <p class="text-gray-400 mb-6">Grade applicants for your division. Passing them will assign their Discord roles and send them a DM.</p>
+                <h2 class="page-title">Divisional Applications</h2>
+                <div class="card">
                     <div id="grader-panel" class="hidden">
-                        <p class="text-gold mb-4">Your Division: <span id="grader-division" class="font-bold"></span></p>
-                        <input type="text" id="cert-id" placeholder="Applicant Discord ID" class="w-full bg-navyLight border border-gray-600 rounded px-4 py-3 text-white mb-4">
-                        <textarea id="cert-notes" placeholder="Feedback/Notes..." class="w-full bg-navyLight border border-gray-600 rounded px-4 py-3 text-white mb-4"></textarea>
-                        <div class="flex gap-4">
-                            <button onclick="gradeApp(true)" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded">Approve Application</button>
-                            <button onclick="gradeApp(false)" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded">Deny Application</button>
+                        <h3 style="margin-bottom: 1rem; color: var(--gold);">Division Lead: <span id="grader-division"></span></h3>
+                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Grade applicants for your division. Passing them will assign their Discord roles and send them a DM.</p>
+                        <input type="text" id="cert-id" placeholder="Applicant Discord ID">
+                        <textarea id="cert-notes" placeholder="Feedback/Notes (Optional)" rows="3"></textarea>
+                        <div style="display: flex; gap: 1rem;">
+                            <button onclick="gradeApp(true)" class="btn btn-green" style="flex:1;">Approve Application</button>
+                            <button onclick="gradeApp(false)" class="btn btn-red" style="flex:1;">Deny Application</button>
                         </div>
                     </div>
-                    <div id="no-grader" class="text-gray-500 italic">You do not have Division Lead permissions.</div>
+                    <div id="no-grader" style="color: var(--text-muted); font-style: italic;">You do not have Division Lead permissions.</div>
                 </div>
             </div>
 
@@ -172,14 +212,11 @@
         let user = {};
         let timerInterval;
 
-        // Navigation
         function switchTab(tabId, btn) {
             document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active-tab', 'border-gold', 'text-gold'); b.classList.add('border-transparent'); });
-            
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
             document.getElementById('tab-' + tabId).classList.add('active');
-            btn.classList.add('active-tab', 'border-gold', 'text-gold');
-            btn.classList.remove('border-transparent');
+            btn.classList.add('active');
         }
 
         async function init() {
@@ -187,15 +224,12 @@
             if (!res.ok) return window.location.href = '/';
             user = await res.json();
 
-            // Set Header
             document.getElementById('user-name').innerText = user.username;
             document.getElementById('user-rank').innerText = user.rank;
             document.getElementById('user-avatar').src = user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
             
-            // Admin Panel visibility
             if (user.rankLevel >= 7) document.getElementById('nav-admin').classList.remove('hidden');
             
-            // Grader visibility
             if (user.graderType) {
                 document.getElementById('grader-panel').classList.remove('hidden');
                 document.getElementById('no-grader').classList.add('hidden');
@@ -215,11 +249,7 @@
             if (data.activeShift) {
                 document.getElementById('btn-in').classList.add('hidden');
                 document.getElementById('btn-out').classList.remove('hidden');
-                document.getElementById('shift-status').innerText = "On Duty";
-                document.getElementById('shift-status').classList.replace('text-white', 'text-green-400');
                 startTimer(new Date(data.startTime).getTime());
-            } else {
-                document.getElementById('shift-status').innerText = "Off Duty";
             }
         }
 
@@ -252,28 +282,31 @@
             document.getElementById('profile-rank').innerText = data.user.rank;
 
             let certHtml = data.certs.map(c => `
-                <div class="flex justify-between items-center bg-navyLight p-4 rounded border border-gray-700">
-                    <span class="font-bold text-white">${c.cert_type}</span>
-                    <span class="px-2 py-1 text-xs font-bold rounded ${c.status === 'Passed' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${c.status}</span>
-                </div>
+                <tr>
+                    <td style="font-weight: 600;">${c.cert_type}</td>
+                    <td><span class="status-badge ${c.status === 'Passed' ? 'status-active' : 'status-suspended'}">${c.status}</span></td>
+                    <td>${new Date(c.graded_at).toLocaleDateString()}</td>
+                </tr>
             `).join('');
-            document.getElementById('profile-certs').innerHTML = certHtml || '<p class="text-gray-500">No applications processed yet.</p>';
+            document.getElementById('profile-certs').innerHTML = certHtml || '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">No applications processed.</td></tr>';
         }
 
         async function loadRoster() {
-            if (user.rankLevel < 6) return; // Only Supervisors+
+            if (user.rankLevel < 6) return;
             const res = await fetch('/api/personnel');
             const users = await res.json();
             
             document.getElementById('roster-body').innerHTML = users.map(u => `
-                <tr class="hover:bg-navyLight transition">
-                    <td class="p-4 flex items-center gap-3">
-                        <img src="${u.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-8 h-8 rounded-full">
-                        <span class="font-semibold text-white">${u.username}</span>
+                <tr>
+                    <td>
+                        <div style="display: flex; align-items: center; gap: 0.75rem;">
+                            <img src="${u.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" style="width: 32px; height: 32px; border-radius: 50%;">
+                            <span style="font-weight: 600;">${u.username}</span>
+                        </div>
                     </td>
-                    <td class="p-4 text-gold">${u.rank}</td>
-                    <td class="p-4 text-gray-300">${((u.total_minutes || 0) / 60).toFixed(1)}</td>
-                    <td class="p-4"><span class="px-2 py-1 text-xs font-bold rounded ${u.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${u.status}</span></td>
+                    <td style="color: var(--gold); font-weight: 600;">${u.rank}</td>
+                    <td>${((u.total_minutes || 0) / 60).toFixed(1)}</td>
+                    <td><span class="status-badge ${u.status === 'Active' ? 'status-active' : 'status-suspended'}">${u.status}</span></td>
                 </tr>
             `).join('');
         }
@@ -292,6 +325,8 @@
                 document.getElementById('cert-id').value = '';
                 document.getElementById('cert-notes').value = '';
                 loadProfile();
+            } else {
+                alert("Error processing application.");
             }
         }
 

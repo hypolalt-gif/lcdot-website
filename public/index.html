@@ -1,82 +1,100 @@
 <!DOCTYPE html>
-<html lang="en" class="scroll-smooth">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lakeview City DOT | Official Portal</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: { navy: '#0B1120', navyLight: '#151E32', gold: '#D4AF37', goldHover: '#b5952f' },
-                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] }
-                }
-            }
-        }
-    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body { background-color: #0B1120; color: #E2E8F0; }
-        .hero-gradient { background: linear-gradient(rgba(11, 17, 32, 0.9), rgba(11, 17, 32, 1)), url('https://images.unsplash.com/photo-1541881484888-122716399099?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover; }
-        .glass-card { background: rgba(21, 30, 50, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(212, 175, 55, 0.2); }
+        :root {
+            --navy: #0F172A;
+            --navy-light: #1E293B;
+            --gold: #D97706;
+            --gold-hover: #B45309;
+            --text-main: #334155;
+            --text-light: #64748B;
+            --bg: #F8FAFC;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); line-height: 1.6; }
+        
+        /* Navbar */
+        header { background: var(--navy); border-bottom: 4px solid var(--gold); padding: 0 2rem; position: sticky; top: 0; z-index: 100; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 80px; }
+        .logo-area { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: white; }
+        .logo-area img { height: 48px; width: auto; border-radius: 4px; }
+        .logo-area h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+        .nav-links { display: flex; gap: 2rem; align-items: center; }
+        .nav-links a { color: #CBD5E1; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
+        .nav-links a:hover { color: white; }
+        .btn-login { background: var(--gold); color: white; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: 600; text-decoration: none; font-size: 0.9rem; transition: background 0.2s; }
+        .btn-login:hover { background: var(--gold-hover); }
+
+        /* Hero */
+        .hero { background: var(--navy-light); padding: 6rem 2rem; text-align: center; border-bottom: 1px solid #334155; }
+        .hero-content { max-width: 800px; margin: 0 auto; }
+        .hero h2 { font-size: 3rem; color: white; font-weight: 700; margin-bottom: 1.5rem; line-height: 1.2; }
+        .hero p { font-size: 1.125rem; color: #94A3B8; margin-bottom: 2.5rem; }
+        
+        /* Content Grid */
+        .main-content { max-width: 1200px; margin: 4rem auto; padding: 0 2rem; }
+        .section-title { font-size: 1.75rem; color: var(--navy); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E2E8F0; }
+        
+        .division-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 4rem; }
+        .division-card { background: white; border: 1px solid #E2E8F0; border-top: 3px solid var(--navy); padding: 2rem; border-radius: 0 0 4px 4px; }
+        .division-card h3 { color: var(--navy); font-size: 1.1rem; margin-bottom: 0.75rem; }
+        .division-card p { color: var(--text-light); font-size: 0.95rem; }
+
+        footer { background: var(--navy); color: #94A3B8; text-align: center; padding: 2rem; font-size: 0.875rem; border-top: 4px solid var(--gold); }
     </style>
 </head>
-<body class="font-sans antialiased">
-    <!-- Navbar -->
-    <nav class="fixed w-full z-50 glass-card border-b border-gold/30">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between h-20">
-                <div class="flex items-center gap-3">
-                    <img src="https://i.imgur.com/YOUR_LOGO_LINK.png" alt="LCDOT" class="h-12 w-12 rounded-full border border-gold bg-navy p-1 object-cover" onerror="this.src='https://via.placeholder.com/150'">
-                    <span class="font-serif text-2xl font-bold tracking-wider text-white">Lakeview City DOT</span>
-                </div>
-                <div class="hidden md:flex space-x-8">
-                    <a href="#about" class="text-gray-300 hover:text-gold transition">About</a>
-                    <a href="#divisions" class="text-gray-300 hover:text-gold transition">Divisions</a>
-                    <a href="#leadership" class="text-gray-300 hover:text-gold transition">Leadership</a>
-                    <a href="/auth/discord" class="bg-gold text-navy px-6 py-2 rounded font-bold hover:bg-goldHover transition shadow-lg shadow-gold/20">Employee Login</a>
-                </div>
+<body>
+    <header>
+        <div class="nav-container">
+            <a href="/" class="logo-area">
+                <img src="https://i.imgur.com/YOUR_LOGO_LINK.png" alt="LCDOT Logo" onerror="this.style.display='none'">
+                <h1>Lakeview City DOT</h1>
+            </a>
+            <div class="nav-links">
+                <a href="#about">About</a>
+                <a href="#divisions">Divisions</a>
+                <a href="/auth/discord" class="btn-login">Employee Login</a>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <!-- Hero -->
-    <section class="hero-gradient h-screen flex items-center justify-center relative">
-        <div class="text-center px-4 max-w-4xl mx-auto">
-            <h1 class="font-serif text-5xl md:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-2xl">Keeping Lakeview <span class="text-gold">Moving.</span></h1>
-            <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">The official operations portal for the Lakeview City Department of Transportation. Managing infrastructure, incident response, and traffic control.</p>
-            <a href="/auth/discord" class="inline-block bg-gold text-navy font-bold text-lg px-10 py-4 rounded hover:bg-goldHover transition transform hover:-translate-y-1 shadow-xl shadow-gold/30">Access Command Center</a>
+    <section class="hero">
+        <div class="hero-content">
+            <h2>Keeping Lakeview Moving.</h2>
+            <p>The official operations portal for the Lakeview City Department of Transportation. Managing infrastructure, incident response, and traffic control across the city.</p>
+            <a href="/auth/discord" class="btn-login" style="padding: 1rem 2rem; font-size: 1rem;">Access Command Center</a>
         </div>
     </section>
 
-    <!-- Divisions -->
-    <section id="divisions" class="py-24 bg-navy">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="font-serif text-4xl text-center mb-16 text-gold">Our Divisions</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
-                    <h3 class="text-xl font-bold text-white mb-3">Heavy Operations (HOD)</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Specialized heavy wrecker and recovery team handling complex incidents on the highway.</p>
-                </div>
-                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
-                    <h3 class="text-xl font-bold text-white mb-3">Construction (COD)</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Managing long-term infrastructure projects, lane closures, and specialized construction operations.</p>
-                </div>
-                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
-                    <h3 class="text-xl font-bold text-white mb-3">Community (CCD)</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Working with the public and other agencies to ensure events and community needs are met safely.</p>
-                </div>
-                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
-                    <h3 class="text-xl font-bold text-white mb-3">Field Training (FTO)</h3>
-                    <p class="text-gray-400 text-sm leading-relaxed">Ensuring every new operator meets the highest standards of safety and professionalism.</p>
-                </div>
+    <main class="main-content" id="divisions">
+        <h2 class="section-title">Our Divisions</h2>
+        <div class="division-grid">
+            <div class="division-card">
+                <h3>Heavy Operations (HOD)</h3>
+                <p>Specialized heavy wrecker and recovery team handling complex incidents on the highway.</p>
+            </div>
+            <div class="division-card">
+                <h3>Construction (COD)</h3>
+                <p>Managing long-term infrastructure projects, lane closures, and specialized construction operations.</p>
+            </div>
+            <div class="division-card">
+                <h3>Community (CCD)</h3>
+                <p>Working with the public and other agencies to ensure events and community needs are met safely.</p>
+            </div>
+            <div class="division-card">
+                <h3>Field Training (FTO)</h3>
+                <p>Ensuring every new operator meets the highest standards of safety and professionalism.</p>
             </div>
         </div>
-    </section>
+    </main>
 
-    <footer class="bg-navyLight py-8 border-t border-gray-800 text-center text-gray-500 text-sm">
-        <p>&copy; 2026 Lakeview City Department of Transportation. Site created by hypol17.</p>
+    <footer>
+        &copy; 2026 Lakeview City Department of Transportation. Site designed for internal operations.
     </footer>
 </body>
 </html>
