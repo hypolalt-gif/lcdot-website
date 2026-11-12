@@ -7,16 +7,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --sidebar-bg: #0F172A;
-            --sidebar-hover: #1E293B;
-            --main-bg: #F1F5F9;
-            --text-main: #0F172A;
-            --text-muted: #64748B;
-            --gold: #D97706;
-            --border: #CBD5E1;
-            --card-bg: #FFFFFF;
-            --success: #16A34A;
-            --danger: #DC2626;
+            --sidebar-bg: #0F172A; --sidebar-hover: #1E293B; --main-bg: #F1F5F9;
+            --text-main: #0F172A; --text-muted: #64748B; --gold: #D97706;
+            --border: #CBD5E1; --card-bg: #FFFFFF; --success: #16A34A; --danger: #DC2626;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; display: flex; height: 100vh; overflow: hidden; background: var(--main-bg); color: var(--text-main); }
@@ -63,23 +56,18 @@
         tr:last-child td { border-bottom: none; }
         tr:hover { background: #F8FAFC; }
 
-        /* Buttons */
+        /* Buttons & Forms */
         .btn { display: inline-block; padding: 0.6rem 1.2rem; font-weight: 600; font-size: 0.875rem; border-radius: 4px; border: none; cursor: pointer; transition: background 0.2s; font-family: inherit; text-align: center; }
         .btn-green { background: var(--success); color: white; }
-        .btn-green:hover { background: #15803D; }
         .btn-red { background: var(--danger); color: white; }
-        .btn-red:hover { background: #B91C1C; }
         .btn-gold { background: var(--gold); color: white; }
-        .btn-gold:hover { background: #B45309; }
-        
-        /* Forms */
         input, select, textarea { width: 100%; padding: 0.75rem; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 0.9rem; margin-bottom: 1rem; background: #F8FAFC; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); background: white; }
         
-        .timer { font-family: monospace; font-size: 2.5rem; font-weight: 700; color: var(--text-main); text-align: center; margin: 1.5rem 0; }
         .status-badge { padding: 0.25rem 0.5rem; font-size: 0.75rem; font-weight: 700; border-radius: 4px; text-transform: uppercase; }
         .status-active { background: #DCFCE7; color: #166534; }
         .status-suspended { background: #FEE2E2; color: #991B1B; }
+        .status-pending { background: #FEF9C3; color: #854D0E; }
         .hidden { display: none !important; }
         .doc-text { white-space: pre-wrap; font-family: inherit; line-height: 1.6; color: var(--text-main); }
     </style>
@@ -89,17 +77,17 @@
     <aside class="sidebar">
         <div class="sidebar-header"><h1>LCDOT Portal</h1></div>
         <nav class="sidebar-nav">
-            <button onclick="switchTab('dashboard', this)" class="nav-btn active">Overview</button>
-            <button onclick="switchTab('shifts', this)" class="nav-btn">Shift Management</button>
+            <button onclick="switchTab('dashboard', this)" class="nav-btn active">Dashboard</button>
             <button onclick="switchTab('profile', this)" class="nav-btn">My Profile</button>
-            <button onclick="switchTab('handbook', this)" class="nav-btn">Handbook</button>
-            <button onclick="switchTab('policies', this)" class="nav-btn">Policies</button>
-            <button onclick="switchTab('roster', this)" class="nav-btn">Personnel Directory</button>
-            <button onclick="switchTab('divisions', this)" class="nav-btn">Divisional Apps</button>
-            <button onclick="switchTab('operations', this)" class="nav-btn">Operations Center</button>
+            <button onclick="switchTab('roster', this)" class="nav-btn">Employee Directory</button>
+            <button onclick="switchTab('shifts', this)" class="nav-btn">Shift Center</button>
+            <button onclick="switchTab('activity', this)" class="nav-btn">Activity Logs</button>
+            <button onclick="switchTab('training', this)" class="nav-btn">Training Center</button>
+            <button onclick="switchTab('loa', this)" class="nav-btn">Leave of Absence</button>
+            <button onclick="switchTab('fleet', this)" class="nav-btn">Fleet Management</button>
             <button onclick="switchTab('announcements', this)" class="nav-btn">Announcements</button>
-            <button onclick="switchTab('resources', this)" class="nav-btn">Resource Library</button>
-            <button onclick="switchTab('admin', this)" id="nav-admin" class="nav-btn hidden">Administration</button>
+            <button onclick="switchTab('documents', this)" class="nav-btn">Document Center</button>
+            <button onclick="switchTab('management', this)" id="nav-management" class="nav-btn hidden">Management HQ</button>
         </nav>
         <div class="sidebar-footer"><a href="/logout" class="logout-btn">Sign Out</a></div>
     </aside>
@@ -123,29 +111,16 @@
             
             <!-- DASHBOARD -->
             <div id="tab-dashboard" class="tab-content active">
-                <h2 class="page-title">Command Overview</h2>
+                <h2 class="page-title">Dashboard Overview</h2>
                 <div class="card">
-                    <h3>Welcome to the Operations Portal</h3>
-                    <p style="color: var(--text-muted); line-height: 1.6;">Use the sidebar to manage your shifts, view the department handbook, grade divisional applications, and access administrative tools.</p>
-                </div>
-            </div>
-
-            <!-- SHIFTS -->
-            <div id="tab-shifts" class="tab-content">
-                <h2 class="page-title">Shift Management</h2>
-                <div class="card" style="max-width: 500px; margin: 0 auto;">
-                    <h3 style="text-align: center;">Active Shift Timer</h3>
-                    <div class="timer" id="timer">00:00:00</div>
-                    <div style="display: flex; gap: 1rem;">
-                        <button onclick="clockIn()" id="btn-in" class="btn btn-green" style="flex:1;">Clock In</button>
-                        <button onclick="clockOut()" id="btn-out" class="btn btn-red hidden" style="flex:1;">Clock Out</button>
-                    </div>
+                    <h3>Welcome back, <span id="dash-name">User</span></h3>
+                    <p style="color: var(--text-muted); line-height: 1.6;">This is your centralized hub. Use the sidebar to clock in, submit activity logs, check your training, and view department announcements.</p>
                 </div>
             </div>
 
             <!-- PROFILE -->
             <div id="tab-profile" class="tab-content">
-                <h2 class="page-title">Service Record</h2>
+                <h2 class="page-title">My Profile</h2>
                 <div class="card">
                     <div style="display: flex; align-items: center; gap: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 1.5rem; margin-bottom: 1.5rem;">
                         <img id="profile-avatar" src="" style="width: 80px; height: 80px; border-radius: 50%; border: 2px solid var(--border);">
@@ -154,7 +129,7 @@
                             <p id="profile-rank" style="color: var(--gold); font-weight: 600;">Loading</p>
                         </div>
                     </div>
-                    <h3 style="margin-bottom: 1rem;">Divisional Applications</h3>
+                    <h3 style="margin-bottom: 1rem;">Certifications & Divisions</h3>
                     <table>
                         <thead><tr><th>Division</th><th>Status</th><th>Date</th></tr></thead>
                         <tbody id="profile-certs"></tbody>
@@ -162,21 +137,9 @@
                 </div>
             </div>
 
-            <!-- HANDBOOK -->
-            <div id="tab-handbook" class="tab-content">
-                <h2 class="page-title">Department Handbook</h2>
-                <div class="card"><div id="handbook-content" class="doc-text">Loading...</div></div>
-            </div>
-
-            <!-- POLICIES -->
-            <div id="tab-policies" class="tab-content">
-                <h2 class="page-title">Department Policies</h2>
-                <div class="card"><div id="policies-content" class="doc-text">Loading...</div></div>
-            </div>
-
             <!-- ROSTER -->
             <div id="tab-roster" class="tab-content">
-                <h2 class="page-title">Personnel Directory</h2>
+                <h2 class="page-title">Employee Directory</h2>
                 <div class="card">
                     <table>
                         <thead><tr><th>Employee</th><th>Rank</th><th>Total Hours</th><th>Status</th></tr></thead>
@@ -185,95 +148,58 @@
                 </div>
             </div>
 
-            <!-- DIVISIONS -->
-            <div id="tab-divisions" class="tab-content">
-                <h2 class="page-title">Divisional Applications</h2>
-                <div class="card">
-                    <div id="grader-panel" class="hidden">
-                        <h3 style="margin-bottom: 1rem; color: var(--gold);">Division Lead: <span id="grader-division"></span></h3>
-                        <p style="color: var(--text-muted); margin-bottom: 1.5rem;">Grade applicants for your division. Passing them will assign their Discord roles and send them a DM.</p>
-                        <input type="text" id="cert-id" placeholder="Applicant Discord ID">
-                        <textarea id="cert-notes" placeholder="Feedback/Notes (Optional)" rows="3"></textarea>
-                        <div style="display: flex; gap: 1rem;">
-                            <button onclick="gradeApp(true)" class="btn btn-green" style="flex:1;">Approve Application</button>
-                            <button onclick="gradeApp(false)" class="btn btn-red" style="flex:1;">Deny Application</button>
-                        </div>
-                    </div>
-                    <div id="no-grader" style="color: var(--text-muted); font-style: italic;">You do not have Division Lead permissions.</div>
-                </div>
-            </div>
-
-            <!-- OPERATIONS -->
-            <div id="tab-operations" class="tab-content">
-                <h2 class="page-title">Operations Center</h2>
-                <div class="card" id="create-wo-card" style="display: none;">
-                    <h3>Create Work Order</h3>
-                    <input type="text" id="wo-title" placeholder="Work Order Title">
-                    <textarea id="wo-desc" placeholder="Description..." rows="2"></textarea>
+            <!-- SHIFTS -->
+            <div id="tab-shifts" class="tab-content">
+                <h2 class="page-title">Shift Center</h2>
+                <div class="card" style="max-width: 500px; margin: 0 auto;">
+                    <h3 style="text-align: center;">Active Shift Timer</h3>
+                    <div class="timer" id="timer" style="font-size: 2.5rem; text-align: center; font-weight: 700; margin: 1.5rem 0;">00:00:00</div>
                     <div style="display: flex; gap: 1rem;">
-                        <select id="wo-priority" style="flex: 1;"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select>
-                        <input type="text" id="wo-assigned" placeholder="Discord ID" style="flex: 1;">
+                        <button onclick="clockIn()" id="btn-in" class="btn btn-green" style="flex:1;">Clock In</button>
+                        <button onclick="clockOut()" id="btn-out" class="btn btn-red hidden" style="flex:1;">Clock Out</button>
                     </div>
-                    <button onclick="createWorkOrder()" class="btn btn-gold" style="width: 100%;">Create Work Order</button>
-                </div>
-                <div class="card">
-                    <h3>Active Work Orders</h3>
-                    <table>
-                        <thead><tr><th>Ref</th><th>Title</th><th>Priority</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead>
-                        <tbody id="wo-body"></tbody>
-                    </table>
-                </div>
-                <div class="card" id="create-closure-card" style="display: none;">
-                    <h3>Report Road Closure</h3>
-                    <input type="text" id="cl-location" placeholder="Location">
-                    <textarea id="cl-reason" placeholder="Reason..." rows="2"></textarea>
-                    <button onclick="reportClosure()" class="btn btn-red" style="width: 100%;">Report Closure</button>
-                </div>
-                <div class="card">
-                    <h3>Active Road Closures</h3>
-                    <table>
-                        <thead><tr><th>Location</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
-                        <tbody id="closure-body"></tbody>
-                    </table>
                 </div>
             </div>
 
-            <!-- ANNOUNCEMENTS -->
-            <div id="tab-announcements" class="tab-content">
-                <h2 class="page-title">Department Announcements</h2>
-                <div class="card" id="create-ann-card" style="display: none;">
-                    <h3>Post New Announcement</h3>
-                    <input type="text" id="ann-title" placeholder="Announcement Title">
-                    <textarea id="ann-content" placeholder="Message..." rows="4"></textarea>
-                    <button onclick="postAnnouncement()" class="btn btn-gold" style="width: 100%;">Publish to Web & Discord</button>
-                </div>
-                <div id="announcement-list"></div>
-            </div>
-
-            <!-- RESOURCES -->
-            <div id="tab-resources" class="tab-content">
-                <h2 class="page-title">Resource Library</h2>
-                <div class="card" id="upload-res-card" style="display: none;">
-                    <h3>Upload New Resource</h3>
-                    <form id="uploadForm">
-                        <input type="file" id="fileInput" required>
-                        <button type="submit" class="btn btn-gold" style="width: 100%;">Upload File (Max 5MB)</button>
-                    </form>
-                </div>
-                <div class="card">
-                    <table>
-                        <thead><tr><th>Document Name</th><th>Uploaded By</th><th>Date</th><th>Action</th></tr></thead>
-                        <tbody id="resource-body"></tbody>
-                    </table>
-                </div>
-            </div>
-
-            <!-- ADMIN -->
-            <div id="tab-admin" class="tab-content">
-                <h2 class="page-title">Administration Panel</h2>
+            <!-- ACTIVITY LOGS -->
+            <div id="tab-activity" class="tab-content">
+                <h2 class="page-title">Activity Logs</h2>
                 
                 <div class="card">
-                    <h3>Personnel Management</h3>
+                    <h3>Submit New Log</h3>
+                    <select id="log-category">
+                        <option value="Patrol">Patrol Report</option>
+                        <option value="Roadwork">Roadwork Report</option>
+                        <option value="Traffic Control">Traffic Control Report</option>
+                        <option value="Vehicle Inspection">Vehicle Inspection</option>
+                    </select>
+                    <textarea id="log-desc" placeholder="Describe what you did..." rows="4"></textarea>
+                    <button onclick="submitLog()" class="btn btn-gold" style="width: 100%;">Submit Log</button>
+                </div>
+
+                <div class="card">
+                    <h3>Recent Logs</h3>
+                    <table>
+                        <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Status</th><th>Actions</th></tr></thead>
+                        <tbody id="activity-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- MANAGEMENT HQ -->
+            <div id="tab-management" class="tab-content">
+                <h2 class="page-title">Management Headquarters</h2>
+                
+                <div class="card">
+                    <h3>Pending Activity Logs</h3>
+                    <table>
+                        <thead><tr><th>Employee</th><th>Category</th><th>Description</th><th>Action</th></tr></thead>
+                        <tbody id="pending-logs-body"></tbody>
+                    </table>
+                </div>
+
+                <div class="card">
+                    <h3>Employee Management</h3>
                     <input type="text" id="admin-target-id" placeholder="Discord ID">
                     <div style="display: flex; gap: 1rem;">
                         <select id="promote-rank" style="flex: 1;">
@@ -288,27 +214,6 @@
                         <button onclick="adminAction('Suspend')" class="btn btn-red" style="flex:1;">Suspend</button>
                         <button onclick="adminAction('Reinstate')" class="btn btn-gold" style="flex:1;">Reinstate</button>
                     </div>
-                </div>
-
-                <div class="card">
-                    <h3>Edit Website Documents</h3>
-                    <select id="doc-type" style="margin-bottom: 1rem;">
-                        <option value="handbook">Handbook</option><option value="policies">Policies</option>
-                    </select>
-                    <textarea id="doc-content" rows="10" placeholder="Type here..."></textarea>
-                    <button onclick="saveDoc()" class="btn btn-gold" style="width: 100%;">Save Document</button>
-                </div>
-
-                <div class="card">
-                    <h3>Manage Executive Board</h3>
-                    <input type="text" id="exec-name" placeholder="Name">
-                    <input type="text" id="exec-rank" placeholder="Rank">
-                    <input type="text" id="exec-img" placeholder="Image URL">
-                    <button onclick="addExecutive()" class="btn btn-gold" style="width: 100%; margin-bottom: 2rem;">Add Executive</button>
-                    <table>
-                        <thead><tr><th>Name</th><th>Rank</th><th>Action</th></tr></thead>
-                        <tbody id="admin-exec-body"></tbody>
-                    </table>
                 </div>
             </div>
 
@@ -325,12 +230,8 @@
             document.getElementById('tab-' + tabId).classList.add('active');
             if (btn) btn.classList.add('active');
 
-            if (tabId === 'handbook') loadDoc('handbook');
-            if (tabId === 'policies') loadDoc('policies');
-            if (tabId === 'operations') loadOperations();
-            if (tabId === 'announcements') loadAnnouncements();
-            if (tabId === 'resources') loadResources();
-            if (tabId === 'admin') loadAdminExecs();
+            if (tabId === 'activity') loadActivityLogs();
+            if (tabId === 'management') loadPendingLogs();
         }
 
         async function init() {
@@ -339,23 +240,12 @@
             user = await res.json();
 
             document.getElementById('user-name').innerText = user.username;
+            document.getElementById('dash-name').innerText = user.username;
             document.getElementById('user-rank').innerText = user.rank;
             document.getElementById('user-avatar').src = user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
             
-            if (user.rankLevel >= 7) {
-                document.getElementById('nav-admin').classList.remove('hidden');
-                document.getElementById('create-ann-card').style.display = 'block';
-                document.getElementById('upload-res-card').style.display = 'block';
-            }
             if (user.rankLevel >= 5) {
-                document.getElementById('create-wo-card').style.display = 'block';
-                document.getElementById('create-closure-card').style.display = 'block';
-            }
-            
-            if (user.graderType) {
-                document.getElementById('grader-panel').classList.remove('hidden');
-                document.getElementById('no-grader').classList.add('hidden');
-                document.getElementById('grader-division').innerText = user.graderType;
+                document.getElementById('nav-management').classList.remove('hidden');
             }
 
             loadStats();
@@ -386,15 +276,8 @@
             }, 1000);
         }
 
-        async function clockIn() {
-            await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'Start'}) });
-            location.reload();
-        }
-        
-        async function clockOut() {
-            await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'End'}) });
-            location.reload();
-        }
+        async function clockIn() { await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'Start'}) }); location.reload(); }
+        async function clockOut() { await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'End'}) }); location.reload(); }
 
         async function loadProfile() {
             const res = await fetch('/api/profile');
@@ -403,29 +286,22 @@
             document.getElementById('profile-name').innerText = data.user.username;
             document.getElementById('profile-rank').innerText = data.user.rank;
 
-            let certHtml = data.certs.map(c => `
+            document.getElementById('profile-certs').innerHTML = data.certs.map(c => `
                 <tr>
                     <td style="font-weight: 600;">${c.cert_type}</td>
                     <td><span class="status-badge ${c.status === 'Passed' ? 'status-active' : 'status-suspended'}">${c.status}</span></td>
                     <td>${new Date(c.graded_at).toLocaleDateString()}</td>
                 </tr>
-            `).join('');
-            document.getElementById('profile-certs').innerHTML = certHtml || '<tr><td colspan="3" style="text-align:center; color: var(--text-muted);">No applications processed.</td></tr>';
+            `).join('') || '<tr><td colspan="3" style="text-align:center;">No certifications.</td></tr>';
         }
 
         async function loadRoster() {
-            if (user.rankLevel < 6) return;
+            if (user.rankLevel < 5) return;
             const res = await fetch('/api/personnel');
             const users = await res.json();
-            
             document.getElementById('roster-body').innerHTML = users.map(u => `
                 <tr>
-                    <td>
-                        <div style="display: flex; align-items: center; gap: 0.75rem;">
-                            <img src="${u.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" style="width: 32px; height: 32px; border-radius: 50%;">
-                            <span style="font-weight: 600;">${u.username}</span>
-                        </div>
-                    </td>
+                    <td><strong>${u.username}</strong></td>
                     <td style="color: var(--gold); font-weight: 600;">${u.rank}</td>
                     <td>${((u.total_minutes || 0) / 60).toFixed(1)}</td>
                     <td><span class="status-badge ${u.status === 'Active' ? 'status-active' : 'status-suspended'}">${u.status}</span></td>
@@ -433,41 +309,57 @@
             `).join('');
         }
 
-        async function loadDoc(type) {
-            const res = await fetch(`/api/docs/${type}`);
-            const data = await res.json();
-            document.getElementById(`${type}-content`).innerText = data.content;
-            if (user.rankLevel >= 7) {
-                document.getElementById('doc-content').value = data.content;
-                document.getElementById('doc-type').value = type;
-            }
-        }
-
-        async function saveDoc() {
-            const type = document.getElementById('doc-type').value;
-            const content = document.getElementById('doc-content').value;
-            const res = await fetch(`/api/docs/${type}`, {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ content })
-            });
-            if (res.ok) alert('Document saved successfully!');
-        }
-
-        async function gradeApp(passed) {
-            const targetId = document.getElementById('cert-id').value;
-            const notes = document.getElementById('cert-notes').value;
-            if (!targetId) return alert("Enter a Discord ID.");
+        async function submitLog() {
+            const category = document.getElementById('log-category').value;
+            const description = document.getElementById('log-desc').value;
+            if (!description) return alert("Enter a description.");
             
-            const res = await fetch('/api/certify', {
+            await fetch('/api/activity-logs', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ targetId, passed, notes })
+                body: JSON.stringify({ category, description })
             });
-            if (res.ok) {
-                alert(`Application ${passed ? 'Approved' : 'Denied'}!`);
-                document.getElementById('cert-id').value = '';
-                document.getElementById('cert-notes').value = '';
-                loadProfile();
-            }
+            document.getElementById('log-desc').value = '';
+            loadActivityLogs();
+        }
+
+        async function loadActivityLogs() {
+            const res = await fetch('/api/activity-logs');
+            const logs = await res.json();
+            document.getElementById('activity-body').innerHTML = logs.map(l => `
+                <tr>
+                    <td>${new Date(l.created_at).toLocaleDateString()}</td>
+                    <td><strong>${l.category}</strong></td>
+                    <td>${l.description}</td>
+                    <td><span class="status-badge ${l.status === 'Approved' ? 'status-active' : l.status === 'Denied' ? 'status-suspended' : 'status-pending'}">${l.status}</span></td>
+                    <td>${user.rankLevel >= 5 && l.status === 'Pending' ? `<button onclick="reviewLog('${l._id}', 'Approved')" class="btn btn-green" style="padding:0.2rem 0.5rem; font-size:0.75rem;">Approve</button> <button onclick="reviewLog('${l._id}', 'Denied')" class="btn btn-red" style="padding:0.2rem 0.5rem; font-size:0.75rem;">Deny</button>` : ''}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center;">No logs found.</td></tr>';
+        }
+
+        async function reviewLog(logId, status) {
+            const notes = prompt("Enter review notes (optional):");
+            await fetch('/api/activity-logs/review', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ logId, status, reviewNotes: notes })
+            });
+            loadActivityLogs();
+        }
+
+        async function loadPendingLogs() {
+            const res = await fetch('/api/activity-logs');
+            const logs = await res.json();
+            const pending = logs.filter(l => l.status === 'Pending');
+            document.getElementById('pending-logs-body').innerHTML = pending.map(l => `
+                <tr>
+                    <td><strong>${l.username}</strong></td>
+                    <td>${l.category}</td>
+                    <td>${l.description}</td>
+                    <td>
+                        <button onclick="reviewLog('${l._id}', 'Approved')" class="btn btn-green" style="padding:0.2rem 0.5rem; font-size:0.75rem;">Approve</button>
+                        <button onclick="reviewLog('${l._id}', 'Denied')" class="btn btn-red" style="padding:0.2rem 0.5rem; font-size:0.75rem;">Deny</button>
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="text-align:center;">No pending logs.</td></tr>';
         }
 
         async function adminAction(action) {
@@ -479,151 +371,7 @@
                 method: 'POST', headers: {'Content-Type': 'application/json'},
                 body: JSON.stringify({ targetId, action, value })
             });
-            if (res.ok) {
-                alert(`${action} successful!`);
-                loadRoster();
-            } else {
-                alert("Action failed. Check permissions.");
-            }
-        }
-
-        // --- OPERATIONS ---
-        async function loadOperations() {
-            const woRes = await fetch('/api/workorders');
-            const wos = await woRes.json();
-            document.getElementById('wo-body').innerHTML = wos.map(w => `
-                <tr>
-                    <td style="font-weight:600;">${w.ref_num}</td>
-                    <td>${w.title}</td>
-                    <td><span class="status-badge ${w.priority === 'High' ? 'status-suspended' : 'status-active'}">${w.priority}</span></td>
-                    <td>${w.assigned_to}</td>
-                    <td><span class="status-badge ${w.status === 'Open' ? 'status-active' : 'status-suspended'}">${w.status}</span></td>
-                    <td>${user.rankLevel >= 5 && w.status === 'Open' ? `<button onclick="closeWO('${w._id}')" class="btn btn-green" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Close</button>` : ''}</td>
-                </tr>
-            `).join('') || '<tr><td colspan="6" style="text-align:center;">No work orders.</td></tr>';
-
-            const clRes = await fetch('/api/closures');
-            const closures = await clRes.json();
-            document.getElementById('closure-body').innerHTML = closures.map(c => `
-                <tr>
-                    <td style="font-weight:600;">${c.location}</td>
-                    <td>${c.reason}</td>
-                    <td><span class="status-badge ${c.status === 'Active' ? 'status-suspended' : 'status-active'}">${c.status}</span></td>
-                    <td>${user.rankLevel >= 5 && c.status === 'Active' ? `<button onclick="resolveClosure('${c._id}')" class="btn btn-green" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Resolve</button>` : ''}</td>
-                </tr>
-            `).join('') || '<tr><td colspan="4" style="text-align:center;">No active closures.</td></tr>';
-        }
-
-        async function createWorkOrder() {
-            const title = document.getElementById('wo-title').value;
-            const description = document.getElementById('wo-desc').value;
-            const priority = document.getElementById('wo-priority').value;
-            const assigned_to = document.getElementById('wo-assigned').value;
-            if (!title || !assigned_to) return alert("Fill out title and assigned user.");
-            await fetch('/api/workorders', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, description, priority, assigned_to}) });
-            loadOperations();
-        }
-
-        async function closeWO(id) {
-            await fetch('/api/workorders/status', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, status: 'Closed'}) });
-            loadOperations();
-        }
-
-        async function reportClosure() {
-            const location = document.getElementById('cl-location').value;
-            const reason = document.getElementById('cl-reason').value;
-            if (!location || !reason) return alert("Fill out all fields.");
-            await fetch('/api/closures', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({location, reason}) });
-            loadOperations();
-        }
-
-        async function resolveClosure(id) {
-            await fetch('/api/closures/status', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, status: 'Resolved'}) });
-            loadOperations();
-        }
-
-        // --- ANNOUNCEMENTS ---
-        async function loadAnnouncements() {
-            const res = await fetch('/api/announcements');
-            const anns = await res.json();
-            document.getElementById('announcement-list').innerHTML = anns.map(a => `
-                <div class="card" style="border-left: 4px solid var(--gold);">
-                    <h3 style="margin-bottom: 0.5rem;">${a.title}</h3>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Posted by ID: ${a.author_id} on ${new Date(a.created_at).toLocaleDateString()}</p>
-                    <p style="white-space: pre-wrap;">${a.content}</p>
-                </div>
-            `).join('') || '<p style="color: var(--text-muted);">No announcements posted.</p>';
-        }
-
-        async function postAnnouncement() {
-            const title = document.getElementById('ann-title').value;
-            const content = document.getElementById('ann-content').value;
-            if (!title || !content) return alert("Fill out all fields.");
-            await fetch('/api/announcements', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, content}) });
-            document.getElementById('ann-title').value = '';
-            document.getElementById('ann-content').value = '';
-            loadAnnouncements();
-        }
-
-        // --- RESOURCES ---
-        async function loadResources() {
-            const res = await fetch('/api/resources');
-            const files = await res.json();
-            document.getElementById('resource-body').innerHTML = files.map(f => `
-                <tr>
-                    <td style="font-weight: 600;">${f.name}</td>
-                    <td>${f.uploader_id}</td>
-                    <td>${new Date(f.uploaded_at).toLocaleDateString()}</td>
-                    <td><a href="/uploads/${f.filename}" target="_blank" style="color: var(--gold); font-weight: bold; text-decoration: none;">Download</a></td>
-                </tr>
-            `).join('') || '<tr><td colspan="4" style="text-align:center;">No resources uploaded.</td></tr>';
-        }
-
-        document.getElementById('uploadForm')?.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const formData = new FormData();
-            formData.append('file', document.getElementById('fileInput').files[0]);
-            const res = await fetch('/api/upload-resource', { method: 'POST', body: formData });
-            if (res.ok) {
-                alert("Resource uploaded!");
-                document.getElementById('fileInput').value = '';
-                loadResources();
-            }
-        });
-
-        // --- EXECUTIVES ---
-        async function loadAdminExecs() {
-            if (user.rankLevel < 7) return;
-            const res = await fetch('/api/executives');
-            const execs = await res.json();
-            document.getElementById('admin-exec-body').innerHTML = execs.map(e => `
-                <tr>
-                    <td>${e.name}</td>
-                    <td>${e.rank}</td>
-                    <td><button onclick="deleteExec('${e._id}')" class="btn btn-red" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Remove</button></td>
-                </tr>
-            `).join('') || '<tr><td colspan="3" style="text-align:center;">No executives added.</td></tr>';
-        }
-
-        async function addExecutive() {
-            const name = document.getElementById('exec-name').value;
-            const rank = document.getElementById('exec-rank').value;
-            const imageUrl = document.getElementById('exec-img').value;
-            if (!name || !rank || !imageUrl) return alert("Fill all fields.");
-            
-            await fetch('/api/executives', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name, rank, imageUrl })
-            });
-            document.getElementById('exec-name').value = '';
-            document.getElementById('exec-rank').value = '';
-            document.getElementById('exec-img').value = '';
-            loadAdminExecs();
-        }
-
-        async function deleteExec(id) {
-            await fetch(`/api/executives/${id}`, { method: 'DELETE' });
-            loadAdminExecs();
+            if (res.ok) alert(`${action} successful!`);
         }
 
         init();
