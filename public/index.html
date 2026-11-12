@@ -4,97 +4,332 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lakeview City DOT | Official Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --navy: #0F172A;
-            --navy-light: #1E293B;
-            --gold: #D97706;
-            --gold-hover: #B45309;
-            --text-main: #334155;
-            --text-light: #64748B;
-            --bg: #F8FAFC;
+            --navy: #0A192F;
+            --navy-light: #112240;
+            --gold: #D4AF37;
+            --text-main: #8892B0;
+            --text-light: #CCD6F6;
+            --white: #FFFFFF;
+            --border: #233554;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text-main); line-height: 1.6; }
+        body { font-family: 'Inter', sans-serif; background: var(--navy); color: var(--text-main); line-height: 1.6; overflow-x: hidden; }
         
         /* Navbar */
-        header { background: var(--navy); border-bottom: 4px solid var(--gold); padding: 0 2rem; position: sticky; top: 0; z-index: 100; }
-        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 80px; }
-        .logo-area { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: white; }
-        .logo-area img { height: 48px; width: auto; border-radius: 4px; }
-        .logo-area h1 { font-size: 1.25rem; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; }
+        header { background: var(--navy-light); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 1000; }
+        .nav-container { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 80px; padding: 0 2rem; }
+        .logo { display: flex; align-items: center; gap: 1rem; text-decoration: none; color: var(--white); cursor: pointer; }
+        .logo img { height: 48px; width: 48px; border-radius: 50%; background: var(--navy); border: 1px solid var(--border); }
+        .logo h1 { font-family: 'Playfair Display', serif; font-size: 1.5rem; letter-spacing: 0.5px; }
         .nav-links { display: flex; gap: 2rem; align-items: center; }
-        .nav-links a { color: #CBD5E1; text-decoration: none; font-size: 0.9rem; font-weight: 500; transition: color 0.2s; }
-        .nav-links a:hover { color: white; }
-        .btn-login { background: var(--gold); color: white; padding: 0.6rem 1.2rem; border-radius: 4px; font-weight: 600; text-decoration: none; font-size: 0.9rem; transition: background 0.2s; }
-        .btn-login:hover { background: var(--gold-hover); }
+        .nav-links a { color: var(--text-light); text-decoration: none; font-size: 0.95rem; font-weight: 500; cursor: pointer; padding: 0.5rem 0; position: relative; transition: color 0.2s; }
+        .nav-links a:hover { color: var(--gold); }
+        .nav-links a.active { color: var(--white); }
+        .nav-links a.active::after { content: ''; position: absolute; bottom: 0; left: 0; width: 100%; height: 2px; background: var(--gold); }
+        .nav-links .btn-login { background: transparent; border: 1px solid var(--gold); color: var(--gold); padding: 0.5rem 1.25rem; border-radius: 4px; transition: all 0.2s; }
+        .nav-links .btn-login:hover { background: var(--gold); color: var(--navy); }
+        .nav-links .btn-login::after { display: none; }
 
-        /* Hero */
-        .hero { background: var(--navy-light); padding: 6rem 2rem; text-align: center; border-bottom: 1px solid #334155; }
-        .hero-content { max-width: 800px; margin: 0 auto; }
-        .hero h2 { font-size: 3rem; color: white; font-weight: 700; margin-bottom: 1.5rem; line-height: 1.2; }
-        .hero p { font-size: 1.125rem; color: #94A3B8; margin-bottom: 2.5rem; }
+        /* Main Content */
+        .page-section { display: none; animation: fadeIn 0.3s ease-in-out; min-height: calc(100vh - 80px - 200px); }
+        .page-section.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
-        /* Content Grid */
-        .main-content { max-width: 1200px; margin: 4rem auto; padding: 0 2rem; }
-        .section-title { font-size: 1.75rem; color: var(--navy); margin-bottom: 2rem; padding-bottom: 0.5rem; border-bottom: 2px solid #E2E8F0; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 4rem 2rem; }
         
-        .division-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 4rem; }
-        .division-card { background: white; border: 1px solid #E2E8F0; border-top: 3px solid var(--navy); padding: 2rem; border-radius: 0 0 4px 4px; }
-        .division-card h3 { color: var(--navy); font-size: 1.1rem; margin-bottom: 0.75rem; }
-        .division-card p { color: var(--text-light); font-size: 0.95rem; }
+        /* Home / Hero */
+        .hero { height: 60vh; background: linear-gradient(rgba(10, 25, 47, 0.8), rgba(10, 25, 47, 1)), url('https://images.unsplash.com/photo-1541881484888-122716399099?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover; display: flex; align-items: center; justify-content: center; text-align: center; }
+        .hero h2 { font-family: 'Playfair Display', serif; font-size: 3.5rem; color: var(--white); margin-bottom: 1rem; }
+        .hero p { font-size: 1.2rem; color: var(--text-light); max-width: 700px; margin: 0 auto; }
 
-        footer { background: var(--navy); color: #94A3B8; text-align: center; padding: 2rem; font-size: 0.875rem; border-top: 4px solid var(--gold); }
+        /* Typography */
+        h2.section-title { font-family: 'Playfair Display', serif; font-size: 2.25rem; color: var(--gold); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        h3.sub-title { color: var(--text-light); font-size: 1.25rem; margin: 2rem 0 1rem 0; }
+        p { margin-bottom: 1rem; }
+
+        /* Leadership Grid */
+        .leadership-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .leader-card { background: var(--navy-light); border: 1px solid var(--border); padding: 2rem; text-align: center; border-radius: 4px; }
+        .leader-card img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid var(--gold); margin-bottom: 1rem; }
+        .leader-card h4 { color: var(--white); font-size: 1.1rem; margin-bottom: 0.25rem; }
+        .leader-card p { color: var(--gold); font-size: 0.9rem; font-weight: 600; margin: 0; }
+
+        /* Divisions */
+        .division-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 2rem; margin-top: 2rem; }
+        .division-card { background: var(--navy-light); border: 1px solid var(--border); padding: 2rem; border-top: 3px solid var(--gold); border-radius: 4px; display: flex; flex-direction: column; }
+        .division-card h3 { color: var(--white); margin-bottom: 1rem; }
+        .division-card p { flex: 1; }
+        .btn-apply { display: block; background: var(--gold); color: var(--navy); padding: 0.75rem; text-decoration: none; font-weight: 700; border-radius: 4px; transition: background 0.2s; text-align: center; margin-top: 1.5rem; }
+        .btn-apply:hover { background: #b5952f; }
+        .btn-disabled { background: #334155; color: #94A3B8; cursor: not-allowed; }
+        .btn-disabled:hover { background: #334155; }
+
+        /* Announcements */
+        .announcement-card { background: var(--navy-light); border: 1px solid var(--border); padding: 2rem; border-radius: 4px; margin-bottom: 1.5rem; }
+        .announcement-card h3 { color: var(--gold); margin-bottom: 0.5rem; }
+        .announcement-card .meta { font-size: 0.85rem; color: var(--text-main); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .announcement-card .content { color: var(--text-light); white-space: pre-wrap; }
+
+        /* Docs (Handbook/Policies) */
+        .doc-box { background: var(--navy-light); border: 1px solid var(--border); padding: 3rem; border-radius: 4px; white-space: pre-wrap; color: var(--text-light); line-height: 1.8; }
+
+        /* Contact */
+        .contact-info { background: var(--navy-light); border: 1px solid var(--border); padding: 3rem; border-radius: 4px; max-width: 600px; margin: 0 auto; text-align: center; }
+        .contact-info a { color: var(--gold); text-decoration: none; font-weight: bold; }
+
+        /* Footer */
+        footer { background: var(--navy-light); border-top: 1px solid var(--border); padding: 3rem 2rem; margin-top: auto; }
+        .footer-grid { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; }
+        .footer-col h4 { color: var(--gold); margin-bottom: 1rem; font-size: 1rem; text-transform: uppercase; letter-spacing: 1px; }
+        .footer-col p, .footer-col a { color: var(--text-main); font-size: 0.9rem; text-decoration: none; display: block; margin-bottom: 0.5rem; cursor: pointer; }
+        .footer-col a:hover { color: var(--gold); }
+        .footer-bottom { max-width: 1200px; margin: 2rem auto 0 auto; padding-top: 1.5rem; border-top: 1px solid var(--border); text-align: center; font-size: 0.85rem; color: var(--text-main); }
+
+        @media (max-width: 768px) {
+            .nav-container { flex-direction: column; height: auto; padding: 1rem; gap: 1rem; }
+            .nav-links { flex-wrap: wrap; justify-content: center; gap: 1rem; }
+            .hero h2 { font-size: 2.5rem; }
+        }
     </style>
 </head>
 <body>
+
     <header>
         <div class="nav-container">
-            <a href="/" class="logo-area">
-                <img src="https://i.imgur.com/YOUR_LOGO_LINK.png" alt="LCDOT Logo" onerror="this.style.display='none'">
+            <a onclick="switchPage('home')" class="logo">
+                <img src="https://cdn.discordapp.com/attachments/1533196538048942110/1570179443874336818/lkdot.png?ex=6af6cfcf&is=6af57e4f&hm=1cf290b1494e15e9c3805728b765fcb0fede2a4460a89755f6a4fd327a1bd4f8&" alt="LCDOT Logo">
                 <h1>Lakeview City DOT</h1>
             </a>
             <div class="nav-links">
-                <a href="#about">About</a>
-                <a href="#divisions">Divisions</a>
-                <a href="/auth/discord" class="btn-login">Employee Login</a>
+                <a onclick="switchPage('home')" id="nav-home" class="active">Home</a>
+                <a onclick="switchPage('about')" id="nav-about">About</a>
+                <a onclick="switchPage('divisions')" id="nav-divisions">Divisions</a>
+                <a onclick="switchPage('announcements')" id="nav-announcements">Announcements</a>
+                <a onclick="switchPage('handbook')" id="nav-handbook">Handbook</a>
+                <a onclick="switchPage('policies')" id="nav-policies">Policies</a>
+                <a onclick="switchPage('contact')" id="nav-contact">Contact</a>
+                <a href="https://discord.gg/yPkVjDUnu8" target="_blank" class="btn-login">Join Today</a>
+                <a href="/auth/discord" class="btn-login" style="border-color: var(--text-main); color: var(--text-main);">Employee Login</a>
             </div>
         </div>
     </header>
 
-    <section class="hero">
-        <div class="hero-content">
-            <h2>Keeping Lakeview Moving.</h2>
-            <p>The official operations portal for the Lakeview City Department of Transportation. Managing infrastructure, incident response, and traffic control across the city.</p>
-            <a href="/auth/discord" class="btn-login" style="padding: 1rem 2rem; font-size: 1rem;">Access Command Center</a>
+    <!-- HOME -->
+    <section id="home" class="page-section active">
+        <div class="hero">
+            <div>
+                <h2>Keeping Lakeview Moving.</h2>
+                <p>The official operations portal for the Lakeview City Department of Transportation. Managing infrastructure, incident response, and traffic control.</p>
+            </div>
+        </div>
+        <div class="container">
+            <h2 class="section-title">Latest Updates</h2>
+            <div id="home-announcements">
+                <p style="text-align: center;">Loading latest updates from Discord...</p>
+            </div>
         </div>
     </section>
 
-    <main class="main-content" id="divisions">
-        <h2 class="section-title">Our Divisions</h2>
-        <div class="division-grid">
-            <div class="division-card">
-                <h3>Heavy Operations (HOD)</h3>
-                <p>Specialized heavy wrecker and recovery team handling complex incidents on the highway.</p>
-            </div>
-            <div class="division-card">
-                <h3>Construction (COD)</h3>
-                <p>Managing long-term infrastructure projects, lane closures, and specialized construction operations.</p>
-            </div>
-            <div class="division-card">
-                <h3>Community (CCD)</h3>
-                <p>Working with the public and other agencies to ensure events and community needs are met safely.</p>
-            </div>
-            <div class="division-card">
-                <h3>Field Training (FTO)</h3>
-                <p>Ensuring every new operator meets the highest standards of safety and professionalism.</p>
+    <!-- ABOUT -->
+    <section id="about" class="page-section">
+        <div class="container">
+            <h2 class="section-title">About the Department</h2>
+            <p>The Department of Transportation is a department responsible for managing and maintaining transportation systems. DOT personnel handle duties such as traffic control, road maintenance, and vehicle towing when applicable. The department responds to roadway incidents, assists other emergency services, and manages construction or road closure operations.</p>
+
+            <h3 class="sub-title" style="margin-top: 4rem;">Executive Board</h3>
+            <div class="leadership-grid" id="executive-list">
+                <!-- Populated by JS -->
             </div>
         </div>
-    </main>
+    </section>
 
+    <!-- DIVISIONS -->
+    <section id="divisions" class="page-section">
+        <div class="container">
+            <h2 class="section-title">Our Divisions</h2>
+            <p>Review the divisions below. Each has specific requirements and duties. Click "Apply" to open the respective Google Form.</p>
+            
+            <div class="division-grid">
+                <div class="division-card">
+                    <h3>Field Training Bureau (FTO)</h3>
+                    <p>The Field Training Bureau focuses on training new members, such as Probationary Operators. Their mission is to make sure the Department of Transportation has well-trained operators.</p>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfF4cE5aB-UhVwTBF4QumKPfcqVOLA-YMhs_hmS0AguluJGvw/viewform" target="_blank" class="btn-apply">Apply for FTO</a>
+                </div>
+                
+                <div class="division-card">
+                    <h3>Heavy Operations (HOD)</h3>
+                    <p>The Heavy Operations division focuses on complex operations involving heavy machinery. They manage tasks such as lifting a vehicle out of water, including rivers and lakes. Their mission is to operate heavy machinery with care and safety.</p>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSeaRBpnvf7WVg64l_uv_OBCOlysgrKLpjSn5GKMPCJKaKgP2A/viewform" target="_blank" class="btn-apply">Apply for HOD</a>
+                </div>
+
+                <div class="division-card">
+                    <h3>Office of Operator Standards</h3>
+                    <p>The Office of Operator Standards focuses on managing complaints made by civilians or by members of the Department of Transportation. Their mission is to handle every report with care and responsibility.</p>
+                    <a class="btn-apply btn-disabled">Handpicked / Interview Only</a>
+                </div>
+
+                <div class="division-card">
+                    <h3>Construction Operations (COD)</h3>
+                    <p>The Construction Operations Division focuses on keeping the roads maintained and up to safety standards. They are tasked with creating new roads, repairing roads, and working on projects for the city.</p>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSfUvmULjYInRcGEfJw-CiZDF2A8XpCs_XsL9ZZreSiEDX5sZQ/viewform" target="_blank" class="btn-apply">Apply for COD</a>
+                </div>
+
+                <div class="division-card">
+                    <h3>Community Coordination (CCD)</h3>
+                    <p>The Community Coordination Division is a highly specialized division in LKDOT providing the department with mass shifts, newsletters, important news, and more! To apply, review requirements below!</p>
+                    <a href="https://docs.google.com/forms/d/e/1FAIpQLSf6Q3Y3pSDlo-R29XF0K4WSHstj6ysRjfqTvPiM-81_8FAVGg/viewform" target="_blank" class="btn-apply">Apply for CCD</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ANNOUNCEMENTS -->
+    <section id="announcements" class="page-section">
+        <div class="container">
+            <h2 class="section-title">Public Announcements</h2>
+            <p style="margin-bottom: 2rem;">Announcements are synced directly from our official Discord server.</p>
+            <div id="public-announcements-list">
+                <p>Loading announcements...</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- HANDBOOK -->
+    <section id="handbook" class="page-section">
+        <div class="container">
+            <h2 class="section-title">Department Handbook</h2>
+            <div class="doc-box" id="handbook-content">Loading...</div>
+        </div>
+    </section>
+
+    <!-- POLICIES -->
+    <section id="policies" class="page-section">
+        <div class="container">
+            <h2 class="section-title">Department Policies</h2>
+            <div class="doc-box" id="policies-content">Loading...</div>
+        </div>
+    </section>
+
+    <!-- CONTACT -->
+    <section id="contact" class="page-section">
+        <div class="container">
+            <h2 class="section-title">Contact Us</h2>
+            <div class="contact-info">
+                <h3>Lakeview City Department of Transportation</h3>
+                <p>310 Cline Street, Lakeview City, CA</p>
+                <p style="margin-top: 2rem;">For general inquiries, please reach out to our command staff via our official Discord server.</p>
+                <br>
+                <a href="https://discord.gg/yPkVjDUnu8" target="_blank">Join our Discord Server</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- FOOTER -->
     <footer>
-        &copy; 2026 Lakeview City Department of Transportation. Site designed for internal operations.
+        <div class="footer-grid">
+            <div class="footer-col">
+                <h4>Lakeview City DOT</h4>
+                <p>Site maintained by Lakeview City Department of Transportation.</p>
+                <p>Site created by Rax_TY4, Former Director.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <a onclick="switchPage('about')">About Us</a>
+                <a onclick="switchPage('divisions')">Divisions</a>
+                <a onclick="switchPage('handbook')">Handbook</a>
+                <a onclick="switchPage('policies')">Policies</a>
+            </div>
+            <div class="footer-col">
+                <h4>Contact Info</h4>
+                <p>310 Cline Street</p>
+                <p>Lakeview City, CA</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 Lakeview City Department of Transportation. All Rights Reserved.
+        </div>
     </footer>
+
+    <script>
+        function switchPage(pageId) {
+            document.querySelectorAll('.page-section').forEach(page => page.classList.remove('active'));
+            document.querySelectorAll('.nav-links a').forEach(link => link.classList.remove('active'));
+            
+            document.getElementById(pageId).classList.add('active');
+            document.getElementById('nav-' + pageId).classList.add('active');
+            
+            window.scrollTo(0, 0);
+
+            // Lazy load data
+            if (pageId === 'about' && document.getElementById('executive-list').innerHTML === '') loadExecutives();
+            if (pageId === 'handbook' && document.getElementById('handbook-content').innerText === 'Loading...') loadDoc('handbook');
+            if (pageId === 'policies' && document.getElementById('policies-content').innerText === 'Loading...') loadDoc('policies');
+        }
+
+        // Fetch the last 3 messages from Discord
+        async function loadAnnouncements() {
+            try {
+                const res = await fetch('/api/public-announcements');
+                const anns = await res.json();
+                
+                if (anns.length === 0) {
+                    document.getElementById('public-announcements-list').innerHTML = '<p>No public announcements at this time.</p>';
+                    document.getElementById('home-announcements').innerHTML = '<p style="text-align:center;">No recent updates.</p>';
+                    return;
+                }
+
+                // Format for Announcements Page
+                document.getElementById('public-announcements-list').innerHTML = anns.map(a => `
+                    <div class="announcement-card">
+                        <h3>${a.title}</h3>
+                        <div class="meta">Posted on ${new Date(a.date).toLocaleDateString()}</div>
+                        <div class="content">${a.content}</div>
+                    </div>
+                `).join('');
+
+                // Format for Home Page (Top 1)
+                document.getElementById('home-announcements').innerHTML = `
+                    <div class="announcement-card">
+                        <h3>${anns[0].title}</h3>
+                        <div class="meta">Posted on ${new Date(anns[0].date).toLocaleDateString()}</div>
+                        <div class="content">${anns[0].content}</div>
+                    </div>
+                `;
+            } catch (err) { console.error(err); }
+        }
+
+        // Fetch Executive Board
+        async function loadExecutives() {
+            const res = await fetch('/api/executives');
+            const execs = await res.json();
+            
+            if (execs.length === 0) {
+                document.getElementById('executive-list').innerHTML = '<p>Executive Board information is currently being updated.</p>';
+                return;
+            }
+
+            document.getElementById('executive-list').innerHTML = execs.map(e => `
+                <div class="leader-card">
+                    <img src="${e.imageUrl}" alt="${e.name}">
+                    <h4>${e.name}</h4>
+                    <p>${e.rank}</p>
+                </div>
+            `).join('');
+        }
+
+        // Fetch Docs
+        async function loadDoc(type) {
+            const res = await fetch(`/api/public-docs/${type}`);
+            const data = await res.json();
+            document.getElementById(`${type}-content`).innerText = data.content;
+        }
+
+        // Init
+        loadAnnouncements();
+        loadExecutives();
+    </script>
 </body>
 </html>

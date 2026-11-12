@@ -96,6 +96,9 @@
             <button onclick="switchTab('policies', this)" class="nav-btn">Policies</button>
             <button onclick="switchTab('roster', this)" class="nav-btn">Personnel Directory</button>
             <button onclick="switchTab('divisions', this)" class="nav-btn">Divisional Apps</button>
+            <button onclick="switchTab('operations', this)" class="nav-btn">Operations Center</button>
+            <button onclick="switchTab('announcements', this)" class="nav-btn">Announcements</button>
+            <button onclick="switchTab('resources', this)" class="nav-btn">Resource Library</button>
             <button onclick="switchTab('admin', this)" id="nav-admin" class="nav-btn hidden">Administration</button>
         </nav>
         <div class="sidebar-footer"><a href="/logout" class="logout-btn">Sign Out</a></div>
@@ -118,6 +121,7 @@
 
         <div class="content-area">
             
+            <!-- DASHBOARD -->
             <div id="tab-dashboard" class="tab-content active">
                 <h2 class="page-title">Command Overview</h2>
                 <div class="card">
@@ -126,6 +130,7 @@
                 </div>
             </div>
 
+            <!-- SHIFTS -->
             <div id="tab-shifts" class="tab-content">
                 <h2 class="page-title">Shift Management</h2>
                 <div class="card" style="max-width: 500px; margin: 0 auto;">
@@ -138,6 +143,7 @@
                 </div>
             </div>
 
+            <!-- PROFILE -->
             <div id="tab-profile" class="tab-content">
                 <h2 class="page-title">Service Record</h2>
                 <div class="card">
@@ -156,20 +162,19 @@
                 </div>
             </div>
 
+            <!-- HANDBOOK -->
             <div id="tab-handbook" class="tab-content">
                 <h2 class="page-title">Department Handbook</h2>
-                <div class="card">
-                    <div id="handbook-content" class="doc-text">Loading...</div>
-                </div>
+                <div class="card"><div id="handbook-content" class="doc-text">Loading...</div></div>
             </div>
 
+            <!-- POLICIES -->
             <div id="tab-policies" class="tab-content">
                 <h2 class="page-title">Department Policies</h2>
-                <div class="card">
-                    <div id="policies-content" class="doc-text">Loading...</div>
-                </div>
+                <div class="card"><div id="policies-content" class="doc-text">Loading...</div></div>
             </div>
 
+            <!-- ROSTER -->
             <div id="tab-roster" class="tab-content">
                 <h2 class="page-title">Personnel Directory</h2>
                 <div class="card">
@@ -180,6 +185,7 @@
                 </div>
             </div>
 
+            <!-- DIVISIONS -->
             <div id="tab-divisions" class="tab-content">
                 <h2 class="page-title">Divisional Applications</h2>
                 <div class="card">
@@ -197,13 +203,78 @@
                 </div>
             </div>
 
-            <!-- Admin Tab -->
+            <!-- OPERATIONS -->
+            <div id="tab-operations" class="tab-content">
+                <h2 class="page-title">Operations Center</h2>
+                <div class="card" id="create-wo-card" style="display: none;">
+                    <h3>Create Work Order</h3>
+                    <input type="text" id="wo-title" placeholder="Work Order Title">
+                    <textarea id="wo-desc" placeholder="Description..." rows="2"></textarea>
+                    <div style="display: flex; gap: 1rem;">
+                        <select id="wo-priority" style="flex: 1;"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select>
+                        <input type="text" id="wo-assigned" placeholder="Discord ID" style="flex: 1;">
+                    </div>
+                    <button onclick="createWorkOrder()" class="btn btn-gold" style="width: 100%;">Create Work Order</button>
+                </div>
+                <div class="card">
+                    <h3>Active Work Orders</h3>
+                    <table>
+                        <thead><tr><th>Ref</th><th>Title</th><th>Priority</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="wo-body"></tbody>
+                    </table>
+                </div>
+                <div class="card" id="create-closure-card" style="display: none;">
+                    <h3>Report Road Closure</h3>
+                    <input type="text" id="cl-location" placeholder="Location">
+                    <textarea id="cl-reason" placeholder="Reason..." rows="2"></textarea>
+                    <button onclick="reportClosure()" class="btn btn-red" style="width: 100%;">Report Closure</button>
+                </div>
+                <div class="card">
+                    <h3>Active Road Closures</h3>
+                    <table>
+                        <thead><tr><th>Location</th><th>Reason</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="closure-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ANNOUNCEMENTS -->
+            <div id="tab-announcements" class="tab-content">
+                <h2 class="page-title">Department Announcements</h2>
+                <div class="card" id="create-ann-card" style="display: none;">
+                    <h3>Post New Announcement</h3>
+                    <input type="text" id="ann-title" placeholder="Announcement Title">
+                    <textarea id="ann-content" placeholder="Message..." rows="4"></textarea>
+                    <button onclick="postAnnouncement()" class="btn btn-gold" style="width: 100%;">Publish to Web & Discord</button>
+                </div>
+                <div id="announcement-list"></div>
+            </div>
+
+            <!-- RESOURCES -->
+            <div id="tab-resources" class="tab-content">
+                <h2 class="page-title">Resource Library</h2>
+                <div class="card" id="upload-res-card" style="display: none;">
+                    <h3>Upload New Resource</h3>
+                    <form id="uploadForm">
+                        <input type="file" id="fileInput" required>
+                        <button type="submit" class="btn btn-gold" style="width: 100%;">Upload File (Max 5MB)</button>
+                    </form>
+                </div>
+                <div class="card">
+                    <table>
+                        <thead><tr><th>Document Name</th><th>Uploaded By</th><th>Date</th><th>Action</th></tr></thead>
+                        <tbody id="resource-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ADMIN -->
             <div id="tab-admin" class="tab-content">
                 <h2 class="page-title">Administration Panel</h2>
                 
                 <div class="card">
                     <h3>Personnel Management</h3>
-                    <input type="text" id="admin-target-id" placeholder="Enter Discord ID to manage">
+                    <input type="text" id="admin-target-id" placeholder="Discord ID">
                     <div style="display: flex; gap: 1rem;">
                         <select id="promote-rank" style="flex: 1;">
                             <option value="Junior Operator">Junior Operator</option><option value="Operator">Operator</option>
@@ -211,22 +282,33 @@
                             <option value="Crew Supervisor">Crew Supervisor</option><option value="Field Supervisor">Field Supervisor</option>
                             <option value="Management Team">Management Team</option><option value="Executive Board">Executive Board</option>
                         </select>
-                        <button onclick="adminAction('Promote')" class="btn btn-green" style="flex: 1;">Promote / Set Rank</button>
+                        <button onclick="adminAction('Promote')" class="btn btn-green" style="flex: 1;">Promote</button>
                     </div>
                     <div style="display: flex; gap: 1rem; margin-top: 1rem;">
-                        <button onclick="adminAction('Suspend')" class="btn btn-red" style="flex:1;">Suspend User</button>
-                        <button onclick="adminAction('Reinstate')" class="btn btn-gold" style="flex:1;">Reinstate User</button>
+                        <button onclick="adminAction('Suspend')" class="btn btn-red" style="flex:1;">Suspend</button>
+                        <button onclick="adminAction('Reinstate')" class="btn btn-gold" style="flex:1;">Reinstate</button>
                     </div>
                 </div>
 
                 <div class="card">
                     <h3>Edit Website Documents</h3>
                     <select id="doc-type" style="margin-bottom: 1rem;">
-                        <option value="handbook">Handbook</option>
-                        <option value="policies">Policies</option>
+                        <option value="handbook">Handbook</option><option value="policies">Policies</option>
                     </select>
-                    <textarea id="doc-content" rows="10" placeholder="Type handbook or policies here..."></textarea>
+                    <textarea id="doc-content" rows="10" placeholder="Type here..."></textarea>
                     <button onclick="saveDoc()" class="btn btn-gold" style="width: 100%;">Save Document</button>
+                </div>
+
+                <div class="card">
+                    <h3>Manage Executive Board</h3>
+                    <input type="text" id="exec-name" placeholder="Name">
+                    <input type="text" id="exec-rank" placeholder="Rank">
+                    <input type="text" id="exec-img" placeholder="Image URL">
+                    <button onclick="addExecutive()" class="btn btn-gold" style="width: 100%; margin-bottom: 2rem;">Add Executive</button>
+                    <table>
+                        <thead><tr><th>Name</th><th>Rank</th><th>Action</th></tr></thead>
+                        <tbody id="admin-exec-body"></tbody>
+                    </table>
                 </div>
             </div>
 
@@ -245,6 +327,10 @@
 
             if (tabId === 'handbook') loadDoc('handbook');
             if (tabId === 'policies') loadDoc('policies');
+            if (tabId === 'operations') loadOperations();
+            if (tabId === 'announcements') loadAnnouncements();
+            if (tabId === 'resources') loadResources();
+            if (tabId === 'admin') loadAdminExecs();
         }
 
         async function init() {
@@ -256,7 +342,15 @@
             document.getElementById('user-rank').innerText = user.rank;
             document.getElementById('user-avatar').src = user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
             
-            if (user.rankLevel >= 7) document.getElementById('nav-admin').classList.remove('hidden');
+            if (user.rankLevel >= 7) {
+                document.getElementById('nav-admin').classList.remove('hidden');
+                document.getElementById('create-ann-card').style.display = 'block';
+                document.getElementById('upload-res-card').style.display = 'block';
+            }
+            if (user.rankLevel >= 5) {
+                document.getElementById('create-wo-card').style.display = 'block';
+                document.getElementById('create-closure-card').style.display = 'block';
+            }
             
             if (user.graderType) {
                 document.getElementById('grader-panel').classList.remove('hidden');
@@ -391,6 +485,145 @@
             } else {
                 alert("Action failed. Check permissions.");
             }
+        }
+
+        // --- OPERATIONS ---
+        async function loadOperations() {
+            const woRes = await fetch('/api/workorders');
+            const wos = await woRes.json();
+            document.getElementById('wo-body').innerHTML = wos.map(w => `
+                <tr>
+                    <td style="font-weight:600;">${w.ref_num}</td>
+                    <td>${w.title}</td>
+                    <td><span class="status-badge ${w.priority === 'High' ? 'status-suspended' : 'status-active'}">${w.priority}</span></td>
+                    <td>${w.assigned_to}</td>
+                    <td><span class="status-badge ${w.status === 'Open' ? 'status-active' : 'status-suspended'}">${w.status}</span></td>
+                    <td>${user.rankLevel >= 5 && w.status === 'Open' ? `<button onclick="closeWO('${w._id}')" class="btn btn-green" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Close</button>` : ''}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="6" style="text-align:center;">No work orders.</td></tr>';
+
+            const clRes = await fetch('/api/closures');
+            const closures = await clRes.json();
+            document.getElementById('closure-body').innerHTML = closures.map(c => `
+                <tr>
+                    <td style="font-weight:600;">${c.location}</td>
+                    <td>${c.reason}</td>
+                    <td><span class="status-badge ${c.status === 'Active' ? 'status-suspended' : 'status-active'}">${c.status}</span></td>
+                    <td>${user.rankLevel >= 5 && c.status === 'Active' ? `<button onclick="resolveClosure('${c._id}')" class="btn btn-green" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Resolve</button>` : ''}</td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="text-align:center;">No active closures.</td></tr>';
+        }
+
+        async function createWorkOrder() {
+            const title = document.getElementById('wo-title').value;
+            const description = document.getElementById('wo-desc').value;
+            const priority = document.getElementById('wo-priority').value;
+            const assigned_to = document.getElementById('wo-assigned').value;
+            if (!title || !assigned_to) return alert("Fill out title and assigned user.");
+            await fetch('/api/workorders', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, description, priority, assigned_to}) });
+            loadOperations();
+        }
+
+        async function closeWO(id) {
+            await fetch('/api/workorders/status', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, status: 'Closed'}) });
+            loadOperations();
+        }
+
+        async function reportClosure() {
+            const location = document.getElementById('cl-location').value;
+            const reason = document.getElementById('cl-reason').value;
+            if (!location || !reason) return alert("Fill out all fields.");
+            await fetch('/api/closures', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({location, reason}) });
+            loadOperations();
+        }
+
+        async function resolveClosure(id) {
+            await fetch('/api/closures/status', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, status: 'Resolved'}) });
+            loadOperations();
+        }
+
+        // --- ANNOUNCEMENTS ---
+        async function loadAnnouncements() {
+            const res = await fetch('/api/announcements');
+            const anns = await res.json();
+            document.getElementById('announcement-list').innerHTML = anns.map(a => `
+                <div class="card" style="border-left: 4px solid var(--gold);">
+                    <h3 style="margin-bottom: 0.5rem;">${a.title}</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 1rem;">Posted by ID: ${a.author_id} on ${new Date(a.created_at).toLocaleDateString()}</p>
+                    <p style="white-space: pre-wrap;">${a.content}</p>
+                </div>
+            `).join('') || '<p style="color: var(--text-muted);">No announcements posted.</p>';
+        }
+
+        async function postAnnouncement() {
+            const title = document.getElementById('ann-title').value;
+            const content = document.getElementById('ann-content').value;
+            if (!title || !content) return alert("Fill out all fields.");
+            await fetch('/api/announcements', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, content}) });
+            document.getElementById('ann-title').value = '';
+            document.getElementById('ann-content').value = '';
+            loadAnnouncements();
+        }
+
+        // --- RESOURCES ---
+        async function loadResources() {
+            const res = await fetch('/api/resources');
+            const files = await res.json();
+            document.getElementById('resource-body').innerHTML = files.map(f => `
+                <tr>
+                    <td style="font-weight: 600;">${f.name}</td>
+                    <td>${f.uploader_id}</td>
+                    <td>${new Date(f.uploaded_at).toLocaleDateString()}</td>
+                    <td><a href="/uploads/${f.filename}" target="_blank" style="color: var(--gold); font-weight: bold; text-decoration: none;">Download</a></td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="text-align:center;">No resources uploaded.</td></tr>';
+        }
+
+        document.getElementById('uploadForm')?.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const formData = new FormData();
+            formData.append('file', document.getElementById('fileInput').files[0]);
+            const res = await fetch('/api/upload-resource', { method: 'POST', body: formData });
+            if (res.ok) {
+                alert("Resource uploaded!");
+                document.getElementById('fileInput').value = '';
+                loadResources();
+            }
+        });
+
+        // --- EXECUTIVES ---
+        async function loadAdminExecs() {
+            if (user.rankLevel < 7) return;
+            const res = await fetch('/api/executives');
+            const execs = await res.json();
+            document.getElementById('admin-exec-body').innerHTML = execs.map(e => `
+                <tr>
+                    <td>${e.name}</td>
+                    <td>${e.rank}</td>
+                    <td><button onclick="deleteExec('${e._id}')" class="btn btn-red" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Remove</button></td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" style="text-align:center;">No executives added.</td></tr>';
+        }
+
+        async function addExecutive() {
+            const name = document.getElementById('exec-name').value;
+            const rank = document.getElementById('exec-rank').value;
+            const imageUrl = document.getElementById('exec-img').value;
+            if (!name || !rank || !imageUrl) return alert("Fill all fields.");
+            
+            await fetch('/api/executives', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ name, rank, imageUrl })
+            });
+            document.getElementById('exec-name').value = '';
+            document.getElementById('exec-rank').value = '';
+            document.getElementById('exec-img').value = '';
+            loadAdminExecs();
+        }
+
+        async function deleteExec(id) {
+            await fetch(`/api/executives/${id}`, { method: 'DELETE' });
+            loadAdminExecs();
         }
 
         init();

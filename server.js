@@ -15,9 +15,10 @@ const app = express();
 const bot = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 let db; 
 
-const COLOR_GOLD = '#D97706';
-const COLOR_NAVY = '#0F172A';
-const LOGO_URL = process.env.DOT_LOGO_URL || 'https://i.imgur.com/yourlogo.png';
+// --- CONSTANTS ---
+const COLOR_GOLD = '#D4AF37';
+const COLOR_NAVY = '#0A192F';
+const LOGO_URL = 'https://cdn.discordapp.com/attachments/1533196538048942110/1570179443874336818/lkdot.png';
 
 const rankMap = {
     "Junior Operator": process.env.ROLE_JUNIOR, "Operator": process.env.ROLE_OPERATOR, "Senior Operator": process.env.ROLE_SENIOR,
@@ -28,12 +29,8 @@ const roleToRankMap = Object.fromEntries(Object.entries(rankMap).map(([k, v]) =>
 const rankLevels = { "Junior Operator": 1, "Operator": 2, "Senior Operator": 3, "Specialist": 4, "Crew Supervisor": 5, "Field Supervisor": 6, "Management Team": 7, "Executive Board": 8 };
 
 const clockInMap = {
-    'Ranked Board': '1478142484310786158',
-    'Supervisory Board': '1482181891762159779',
-    'HOD': '1515405631736254694',
-    'COD': '1533620521881567262',
-    'CCD': '1559485323870998598',
-    'FTO': '1512374542213972093'
+    'Ranked Board': '1478142484310786158', 'Supervisory Board': '1482181891762159779',
+    'HOD': '1515405631736254694', 'COD': '1533620521881567262', 'CCD': '1559485323870998598', 'FTO': '1512374542213972093'
 };
 
 // --- 1. DISCORD BOT SETUP ---
@@ -42,7 +39,6 @@ bot.login(process.env.BOT_TOKEN).catch(err => console.error("Discord Login Error
 bot.once('clientReady', async () => {
     console.log(`✅ Bot logged in as ${bot.user.tag}`);
     const commands = require('./commands.js');
-
     const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
     try {
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: commands });
@@ -53,7 +49,6 @@ bot.once('clientReady', async () => {
 bot.on('guildMemberUpdate', async (oldMember, newMember) => {
     if (!db) return;
     if (oldMember.roles.cache.size === newMember.roles.cache.size) return;
-    
     let newRank = null, highestLevel = 0;
     newMember.roles.cache.forEach(role => {
         if (roleToRankMap[role.id]) {
@@ -61,7 +56,6 @@ bot.on('guildMemberUpdate', async (oldMember, newMember) => {
             if (rankLevels[rankName] > highestLevel) { highestLevel = rankLevels[rankName]; newRank = rankName; }
         }
     });
-
     if (newRank) {
         const currentUser = await db.collection('users').findOne({ id: newMember.id });
         if (currentUser && currentUser.rank !== newRank) {
@@ -79,7 +73,6 @@ bot.on('interactionCreate', async interaction => {
                 await member.roles.add(process.env.ROLE_LOA);
                 await member.setNickname(`LOA (${member.user.username})`);
                 await db.collection('users').updateOne({ id: targetId }, { $set: { status: 'LOA' } });
-                
                 const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0]).setColor('#16A34A').setFooter({ text: `Approved by ${interaction.user.username}` });
                 await interaction.update({ embeds: [updatedEmbed], components: [] });
             } catch (err) { interaction.reply({ content: 'Error approving LOA. Check role hierarchy.', ephemeral: true }); }
@@ -97,23 +90,18 @@ bot.on('interactionCreate', async interaction => {
 
     if (commandName === 'loa-request') {
         const reason = interaction.options.getString('reason');
-        const embed = new EmbedBuilder()
-            .setTitle("📝 Leave of Absence Request")
-            .setDescription(`**User:** ${user.tag} (${user.id})\n**Reason:** ${reason}`)
-            .setColor(COLOR_GOLD).setTimestamp();
-
+        const embed = new EmbedBuilder().setTitle("📝 Leave of Absence Request").setDescription(`**User:** ${user.tag} (${user.id})\n**Reason:** ${reason}`).setColor(COLOR_GOLD).setTimestamp();
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`approve_loa_${user.id}`).setLabel('Approve LOA').setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId(`deny_loa_${user.id}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
         );
-
         try {
             const channel = await bot.channels.fetch(process.env.CHANNEL_LOA);
             if (!channel) throw new Error("Channel not found");
             await channel.send({ embeds: [embed], components: [row] });
             interaction.reply({ content: "✅ Your LOA request has been sent to Management.", ephemeral: true });
         } catch (err) { 
-            console.error("LOA Error:", err); // This will print the exact error in Render logs
+            console.error("LOA Error:", err);
             interaction.reply({ content: "Error sending LOA request. Check Render logs.", ephemeral: true }); 
         }
     }
@@ -122,10 +110,8 @@ bot.on('interactionCreate', async interaction => {
         const type = interaction.options.getString('type');
         const requiredRole = clockInMap[type];
         if (!member.roles.cache.has(requiredRole)) return interaction.reply({ content: `❌ You do not have the required role for **${type}**.`, ephemeral: true });
-
         const active = await db.collection('shifts').findOne({ user_id: user.id, status: 'active' });
         if (active) return interaction.reply({ content: "You are already clocked in!", ephemeral: true });
-
         try {
             await member.roles.add(process.env.ROLE_ON_DUTY);
             await db.collection('shifts').insertOne({ user_id: user.id, shift_type: type, start_time: new Date(), status: 'active' });
@@ -197,12 +183,10 @@ bot.on('interactionCreate', async interaction => {
         const newRank = interaction.options.getString('rank');
         const reason = interaction.options.getString('reason');
         const targetMember = await interaction.guild.members.fetch(target.id);
-        
         const oldRankData = await db.collection('users').findOne({ id: target.id });
         if (oldRankData && rankMap[oldRankData.rank]) await targetMember.roles.remove(rankMap[oldRankData.rank]);
         await targetMember.roles.add(rankMap[newRank]);
         await db.collection('users').updateOne({ id: target.id }, { $set: { rank: newRank, rank_level: rankLevels[newRank] } }, { upsert: true });
-
         const embed = new EmbedBuilder().setTitle("🎖️ Promotion").setDescription(`<@${target.id}> has been promoted to **${newRank}**!`).addFields({ name: 'Reason', value: reason }).setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
         const promoChannel = await bot.channels.fetch(process.env.CHANNEL_PROMOTION);
         if (promoChannel) await promoChannel.send({ embeds: [embed] });
@@ -222,6 +206,16 @@ app.use(helmet({ contentSecurityPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 2000 }));
 app.use(express.static('public'));
 app.use(express.json());
+
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        const dir = './public/uploads';
+        if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+        cb(null, dir);
+    },
+    filename: (req, file, cb) => cb(null, Date.now() + '-' + file.originalname.replace(/\s+/g, '_'))
+});
+const upload = multer({ storage: storage, limits: { fileSize: 5 * 1024 * 1024 } });
 
 async function startServer() {
     try {
@@ -268,6 +262,7 @@ async function startServer() {
                 else if (roles.includes(process.env.ROLE_OPERATOR)) { rank = "Operator"; rankLevel = 2; }
                 else if (roles.includes(process.env.ROLE_JUNIOR)) { rank = "Junior Operator"; rankLevel = 1; }
                 else if (roles.includes(process.env.ROLE_PROBATIONARY)) { rank = "Probationary"; rankLevel = 0; }
+                
                 let graderType = null;
                 if (roles.includes(process.env.GRADER_FTO)) graderType = 'FTO';
                 else if (roles.includes(process.env.GRADER_HOD)) graderType = 'HOD';
@@ -330,7 +325,6 @@ async function startServer() {
                     if (grader === 'HOD') { await member.roles.add(process.env.PASSED_HOD_1); await member.roles.add(process.env.PASSED_HOD_2); }
                     if (grader === 'COD') { await member.roles.add(process.env.PASSED_COD_1); await member.roles.add(process.env.PASSED_COD_2); }
                     if (grader === 'CCD') { await member.roles.add(process.env.PASSED_CCD_1); await member.roles.add(process.env.PASSED_CCD_2); }
-                    
                     const dmEmbed = new EmbedBuilder().setAuthor({ name: 'Department Of Transportation', iconURL: LOGO_URL }).setTitle(`DOT Application Approval: ${grader} Division`).setDescription(`Congratulations, <@${targetId}>,\n\n> Your **${grader}** application has been reviewed by our team. After careful evaluation, your application has been **approved**.`).addFields({ name: 'Additional Information:', value: `**Applicant:** ${member.user.username} | ${targetId}\n**Result:** Passed\n**Time of Review:** <t:${Math.floor(Date.now() / 1000)}:R>` }).setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
                     member.send({ embeds: [dmEmbed] }).catch(() => {});
                 } else {
@@ -353,7 +347,6 @@ async function startServer() {
             res.json(await db.collection('users').find().sort({ rank_level: -1, username: 1 }).toArray());
         });
 
-        // --- DOCS (HANDBOOK & POLICIES) ---
         app.get('/api/docs/:type', async (req, res) => {
             const doc = await db.collection('docs').findOne({ type: req.params.type });
             res.json({ content: doc ? doc.content : 'No content added yet.' });
@@ -365,7 +358,6 @@ async function startServer() {
             res.json({ success: true });
         });
 
-        // --- ADMIN ACTIONS ---
         app.post('/api/admin/action', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
             const { targetId, action, value } = req.body;
@@ -393,6 +385,49 @@ async function startServer() {
         app.get('/api/audit-logs', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
             res.json(await db.collection('audit_logs').find().sort({ created_at: -1 }).limit(100).toArray());
+        });
+
+        // --- PUBLIC ANNOUNCEMENTS (Discord) ---
+        app.get('/api/public-announcements', async (req, res) => {
+            try {
+                const channelId = '1478142273169526864';
+                const channel = await bot.channels.fetch(channelId);
+                if (!channel) return res.json([]);
+                const messages = await channel.messages.fetch({ limit: 3 });
+                const anns = messages.map(m => ({
+                    id: m.id,
+                    title: m.embeds.length > 0 && m.embeds[0].title ? m.embeds[0].title : 'Department Update',
+                    content: m.embeds.length > 0 ? m.embeds[0].description : m.content,
+                    date: m.createdAt
+                }));
+                res.json(anns);
+            } catch (err) {
+                console.error("Failed to fetch Discord announcements:", err.message);
+                res.json([]);
+            }
+        });
+
+        app.get('/api/public-docs/:type', async (req, res) => {
+            const doc = await db.collection('docs').findOne({ type: req.params.type });
+            res.json({ content: doc ? doc.content : 'This document has not been published yet.' });
+        });
+
+        // --- EXECUTIVE BOARD ---
+        app.get('/api/executives', async (req, res) => {
+            res.json(await db.collection('executives').find().toArray());
+        });
+
+        app.post('/api/executives', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
+            const { name, rank, imageUrl } = req.body;
+            await db.collection('executives').insertOne({ name, rank, imageUrl, created_at: new Date() });
+            res.json({ success: true });
+        });
+
+        app.delete('/api/executives/:id', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
+            await db.collection('executives').deleteOne({ _id: new ObjectId(req.params.id) });
+            res.json({ success: true });
         });
 
         const PORT = process.env.PORT || 3000;
