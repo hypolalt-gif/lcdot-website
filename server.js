@@ -8,7 +8,7 @@ const fs = require('fs');
 const multer = require('multer');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { Client, GatewayIntentBits, EmbedBuilder, SlashCommandBuilder, REST, Routes, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+const { Client, GatewayIntentBits, EmbedBuilder, REST, Routes, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const { MongoClient, ObjectId } = require('mongodb');
 
 const app = express();
@@ -17,7 +17,7 @@ let db;
 
 // --- CONSTANTS ---
 const COLOR_GOLD = '#D4AF37';
-const COLOR_NAVY = '#14264A';
+const COLOR_NAVY = '#0B1120';
 const LOGO_URL = process.env.DOT_LOGO_URL || 'https://i.imgur.com/yourlogo.png';
 
 const rankMap = {
@@ -44,46 +44,13 @@ bot.login(process.env.BOT_TOKEN).catch(err => console.error("Discord Login Error
 bot.once('clientReady', async () => {
     console.log(`✅ Bot logged in as ${bot.user.tag}`);
     
-    const commands = [
-        new SlashCommandBuilder().setName('clockin')
-            .setDescription('Start your DOT shift')
-            .addStringOption(opt => opt.setName('type').setDescription('Select Board or Division').setRequired(true)
-                .addChoices(
-                    { name: 'Ranked Board', value: 'Ranked Board' },
-                    { name: 'Supervisory Board', value: 'Supervisory Board' },
-                    { name: 'HOD (Heavy Ops)', value: 'HOD' },
-                    { name: 'COD (Construction)', value: 'COD' },
-                    { name: 'CCD (Community)', value: 'CCD' },
-                    { name: 'FTO (Field Training)', value: 'FTO' }
-                )),
-        new SlashCommandBuilder().setName('clockout').setDescription('End your DOT shift'),
-        new SlashCommandBuilder().setName('stats').setDescription('View your DOT stats'),
-        new SlashCommandBuilder().setName('profile')
-            .setDescription('View a member\'s full profile')
-            .addUserOption(opt => opt.setName('user').setDescription('The user to view').setRequired(true)),
-        new SlashCommandBuilder().setName('on-duty').setDescription('View who is currently on duty'),
-        new SlashCommandBuilder().setName('leaderboard').setDescription('View the weekly hours leaderboard'),
-        new SlashCommandBuilder().setName('loa')
-            .setDescription('Request a Leave of Absence')
-            .addStringOption(opt => opt.setName('reason').setDescription('Reason for LOA').setRequired(true)),
-        new SlashCommandBuilder().setName('promote')
-            .setDescription('Promote a member')
-            .addUserOption(opt => opt.setName('user').setDescription('The user to promote').setRequired(true))
-            .addStringOption(opt => opt.setName('rank').setDescription('The new rank').setRequired(true)
-                .addChoices(
-                    { name: 'Junior Operator', value: 'Junior Operator' }, { name: 'Operator', value: 'Operator' },
-                    { name: 'Senior Operator', value: 'Senior Operator' }, { name: 'Specialist', value: 'Specialist' },
-                    { name: 'Crew Supervisor', value: 'Crew Supervisor' }, { name: 'Field Supervisor', value: 'Field Supervisor' },
-                    { name: 'Management Team', value: 'Management Team' }, { name: 'Executive Board', value: 'Executive Board' }
-                ))
-            .addStringOption(opt => opt.setName('reason').setDescription('Reason for promotion').setRequired(true)),
-        new SlashCommandBuilder().setName('reset-shifts').setDescription('Reset all weekly hours (Executive Only)')
-    ].map(command => command.toJSON());
+    // Load commands from external file
+    const commands = require('./commands.js');
 
     const rest = new REST({ version: '10' }).setToken(process.env.BOT_TOKEN);
     try {
         await rest.put(Routes.applicationGuildCommands(process.env.CLIENT_ID, process.env.GUILD_ID), { body: commands });
-        console.log('✅ Slash commands registered.');
+        console.log(`✅ ${commands.length} Slash commands registered.`);
     } catch (error) { console.error('Error registering commands:', error); }
 });
 
@@ -108,8 +75,10 @@ bot.on('guildMemberUpdate', async (oldMember, newMember) => {
     }
 });
 
-// --- 2. SLASH COMMAND LOGIC ---
+// --- 2. SLASH COMMAND & BUTTON LOGIC ---
 bot.on('interactionCreate', async interaction => {
+    
+    // --- HANDLE BUTTONS (LOA) ---
     if (interaction.isButton()) {
         if (interaction.customId.startsWith('approve_loa_')) {
             const targetId = interaction.customId.split('_')[2];
@@ -123,7 +92,7 @@ bot.on('interactionCreate', async interaction => {
                     .setColor('#2ecc71')
                     .setFooter({ text: `Approved by ${interaction.user.username}` });
                 await interaction.update({ embeds: [updatedEmbed], components: [] });
-            } catch (err) { interaction.reply({ content: 'Error approving LOA.', ephemeral: true }); }
+            } catch (err) { interaction.reply({ content: 'Error approving LOA (Check role hierarchy).', ephemeral: true }); }
         }
         if (interaction.customId.startsWith('deny_loa_')) {
             const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
@@ -134,10 +103,32 @@ bot.on('interactionCreate', async interaction => {
         return;
     }
 
+    // --- HANDLE SLASH COMMANDS ---
     if (!interaction.isChatInputCommand() || !db) return;
     const { commandName, user } = interaction;
     const member = await interaction.guild.members.fetch(user.id);
 
+    // Basic
+    if (commandName === 'ping') {
+        return interaction.reply({ content: `🏓 Pong! Latency: ${bot.ws.ping}ms`, ephemeral: true });
+    }
+
+    if (commandName === 'help') {
+        const embed = new EmbedBuilder()
+            .setTitle("📚 LCDOT Command Directory")
+            .setDescription("Here are the available commands:")
+            .addFields(
+                { name: 'Shifts', value: '`/clockin`, `/clockout`, `/shift-stats`, `/on-duty`, `/leaderboard`' },
+                { name: 'Roster', value: '`/profile`, `/roster`' },
+                { name: 'Leave of Absence', value: '`/loa-request`, `/loa-return`' },
+                { name: 'Admin', value: '`/promote`, `/suspend`, `/reinstate`, `/reset-shifts`, `/announce`' },
+                { name: 'Divisions', value: '`/app-approve`, `/app-deny`' }
+            )
+            .setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
+        return interaction.reply({ embeds: [embed], ephemeral: true });
+    }
+
+    // Shifts
     if (commandName === 'clockin') {
         const type = interaction.options.getString('type');
         const requiredRole = clockInMap[type];
@@ -147,12 +138,11 @@ bot.on('interactionCreate', async interaction => {
         }
 
         const active = await db.collection('shifts').findOne({ user_id: user.id, status: 'active' });
-        if (active) return interaction.reply({ content: "You are already clocked in! Use `/clockout` first.", ephemeral: true });
+        if (active) return interaction.reply({ content: "You are already clocked in!", ephemeral: true });
 
         try {
             await member.roles.add(process.env.ROLE_ON_DUTY);
             await db.collection('shifts').insertOne({ user_id: user.id, shift_type: type, start_time: new Date(), status: 'active' });
-            
             const embed = new EmbedBuilder().setTitle("Shift Started").setDescription(`You are now clocked in for **${type}**.`).setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
             interaction.reply({ embeds: [embed] });
         } catch (err) { interaction.reply({ content: "Error clocking in. Check bot permissions.", ephemeral: true }); }
@@ -165,16 +155,76 @@ bot.on('interactionCreate', async interaction => {
         try {
             await member.roles.remove(process.env.ROLE_ON_DUTY);
             const durationMins = Math.floor((new Date() - new Date(active.start_time)) / 60000);
-            
             await db.collection('shifts').updateOne({ _id: active._id }, { $set: { end_time: new Date(), duration_minutes: durationMins, status: 'completed' } });
             await db.collection('users').updateOne({ id: user.id }, { $inc: { total_minutes: durationMins, weekly_minutes: durationMins } }, { upsert: true });
-            
             const embed = new EmbedBuilder().setTitle("Shift Ended").setDescription(`You worked **${durationMins} minutes** for **${active.shift_type}**.`).setColor(COLOR_NAVY).setThumbnail(LOGO_URL);
             interaction.reply({ embeds: [embed] });
         } catch (err) { interaction.reply({ content: "Error clocking out.", ephemeral: true }); }
     }
 
-    if (commandName === 'loa') {
+    if (commandName === 'on-duty') {
+        const activeShifts = await db.collection('shifts').find({ status: 'active' }).toArray();
+        if (activeShifts.length === 0) return interaction.reply({ content: "No one is currently on duty.", ephemeral: true });
+
+        const grouped = {};
+        for (const shift of activeShifts) {
+            const u = await db.collection('users').findOne({ id: shift.user_id });
+            if (!grouped[shift.shift_type]) grouped[shift.shift_type] = [];
+            grouped[shift.shift_type].push(u ? u.username : 'Unknown');
+        }
+        const embed = new EmbedBuilder().setTitle("🟢 Currently On Duty").setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
+        for (const [type, users] of Object.entries(grouped)) {
+            embed.addFields({ name: `**${type}** (${users.length})`, value: users.join(', ') });
+        }
+        interaction.reply({ embeds: [embed] });
+    }
+
+    if (commandName === 'leaderboard') {
+        const topUsers = await db.collection('users').find().sort({ weekly_minutes: -1 }).limit(10).toArray();
+        const embed = new EmbedBuilder().setTitle("🏆 Weekly Leaderboard").setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
+        let desc = topUsers.map((u, i) => `**${i + 1}.** ${u.username} - ${((u.weekly_minutes || 0) / 60).toFixed(1)} hrs`).join('\n');
+        embed.setDescription(desc || "No shifts logged this week.");
+        interaction.reply({ embeds: [embed] });
+    }
+
+    if (commandName === 'shift-stats') {
+        const dbUser = await db.collection('users').findOne({ id: user.id });
+        if (!dbUser) return interaction.reply({ content: "You must log into the website first.", ephemeral: true });
+        interaction.reply({ embeds: [new EmbedBuilder().setTitle(`${user.username}'s Stats`).addFields(
+            { name: 'Rank', value: dbUser.rank || 'Unranked', inline: true }, 
+            { name: 'Weekly Hours', value: `${((dbUser.weekly_minutes || 0) / 60).toFixed(1)}`, inline: true }, 
+            { name: 'Total Hours', value: `${((dbUser.total_minutes || 0) / 60).toFixed(1)}`, inline: true }
+        ).setColor(COLOR_NAVY).setThumbnail(LOGO_URL)] });
+    }
+
+    // Roster & Profile
+    if (commandName === 'profile') {
+        const target = interaction.options.getUser('user');
+        const dbUser = await db.collection('users').findOne({ id: target.id });
+        if (!dbUser) return interaction.reply({ content: "That user is not in the database.", ephemeral: true });
+        
+        const embed = new EmbedBuilder()
+            .setTitle(`👤 Profile: ${dbUser.username}`)
+            .setThumbnail(dbUser.avatar_url || LOGO_URL)
+            .addFields(
+                { name: 'Rank', value: dbUser.rank || 'Unranked', inline: true },
+                { name: 'Weekly Hours', value: `${((dbUser.weekly_minutes || 0) / 60).toFixed(1)}`, inline: true },
+                { name: 'Total Hours', value: `${((dbUser.total_minutes || 0) / 60).toFixed(1)}`, inline: true },
+                { name: 'Status', value: dbUser.status || 'Active', inline: true }
+            ).setColor(COLOR_GOLD);
+        interaction.reply({ embeds: [embed] });
+    }
+
+    if (commandName === 'roster') {
+        const users = await db.collection('users').find({ status: 'Active' }).sort({ rank_level: -1 }).limit(20).toArray();
+        const embed = new EmbedBuilder().setTitle('📋 LCDOT Roster').setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
+        let desc = users.map(u => `**${u.rank}** - ${u.username}`).join('\n') || 'No active members.';
+        embed.setDescription(desc);
+        interaction.reply({ embeds: [embed] });
+    }
+
+    // LOA
+    if (commandName === 'loa-request') {
         const reason = interaction.options.getString('reason');
         const embed = new EmbedBuilder()
             .setTitle("📝 Leave of Absence Request")
@@ -189,13 +239,23 @@ bot.on('interactionCreate', async interaction => {
         try {
             const channel = await bot.channels.fetch(process.env.CHANNEL_LOA);
             if (channel) await channel.send({ embeds: [embed], components: [row] });
-            interaction.reply({ content: "✅ Your LOA request has been sent to Management for review.", ephemeral: true });
+            interaction.reply({ content: "✅ Your LOA request has been sent to Management.", ephemeral: true });
         } catch (err) { interaction.reply({ content: "Error sending LOA request.", ephemeral: true }); }
     }
 
+    if (commandName === 'loa-return') {
+        try {
+            await member.roles.remove(process.env.ROLE_LOA);
+            await member.setNickname(member.user.username);
+            await db.collection('users').updateOne({ id: user.id }, { $set: { status: 'Active' } });
+            interaction.reply({ content: "✅ Welcome back! Your LOA status has been removed.", ephemeral: true });
+        } catch (err) { interaction.reply({ content: "Error removing LOA status.", ephemeral: true }); }
+    }
+
+    // Admin
     if (commandName === 'promote') {
         if (!member.roles.cache.has(process.env.ROLE_MGMT) && !member.roles.cache.has(process.env.ROLE_EXEC)) {
-            return interaction.reply({ content: "❌ Only Management+ can promote members.", ephemeral: true });
+            return interaction.reply({ content: "❌ Only Management+ can promote.", ephemeral: true });
         }
         const target = interaction.options.getUser('user');
         const newRank = interaction.options.getString('rank');
@@ -224,64 +284,67 @@ bot.on('interactionCreate', async interaction => {
         } catch (err) { interaction.reply({ content: "Error processing promotion.", ephemeral: true }); }
     }
 
-    if (commandName === 'on-duty') {
-        const activeShifts = await db.collection('shifts').find({ status: 'active' }).toArray();
-        if (activeShifts.length === 0) return interaction.reply({ content: "No one is currently on duty.", ephemeral: true });
-
-        const grouped = {};
-        for (const shift of activeShifts) {
-            const u = await db.collection('users').findOne({ id: shift.user_id });
-            if (!grouped[shift.shift_type]) grouped[shift.shift_type] = [];
-            grouped[shift.shift_type].push(u ? u.username : 'Unknown');
-        }
-
-        const embed = new EmbedBuilder().setTitle("🟢 Currently On Duty").setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
-        for (const [type, users] of Object.entries(grouped)) {
-            embed.addFields({ name: `**${type}** (${users.length})`, value: users.join(', ') });
-        }
-        interaction.reply({ embeds: [embed] });
+    if (commandName === 'suspend') {
+        if (!member.roles.cache.has(process.env.ROLE_MGMT) && !member.roles.cache.has(process.env.ROLE_EXEC)) return interaction.reply({ content: "❌ Denied.", ephemeral: true });
+        const target = interaction.options.getUser('user');
+        const reason = interaction.options.getString('reason');
+        
+        await db.collection('users').updateOne({ id: target.id }, { $set: { status: 'Suspended' } });
+        await db.collection('audit_logs').insertOne({ action: 'Suspended', actor_id: user.id, target_id: target.id, details: reason, created_at: new Date() });
+        sendLog(process.env.CHANNEL_AUDIT, `Personnel: Suspended`, `**By:** ${user.username}\n**User:** ${target.username}\n**Reason:** ${reason}`, '#e74c3c');
+        interaction.reply({ content: `⚠️ ${target.username} has been suspended.`, ephemeral: true });
     }
 
-    if (commandName === 'leaderboard') {
-        const topUsers = await db.collection('users').find().sort({ weekly_minutes: -1 }).limit(10).toArray();
-        const embed = new EmbedBuilder().setTitle("🏆 Weekly Leaderboard").setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
-        let desc = topUsers.map((u, i) => `**${i + 1}.** ${u.username} - ${((u.weekly_minutes || 0) / 60).toFixed(1)} hrs`).join('\n');
-        embed.setDescription(desc || "No shifts logged this week.");
-        interaction.reply({ embeds: [embed] });
+    if (commandName === 'reinstate') {
+        if (!member.roles.cache.has(process.env.ROLE_MGMT) && !member.roles.cache.has(process.env.ROLE_EXEC)) return interaction.reply({ content: "❌ Denied.", ephemeral: true });
+        const target = interaction.options.getUser('user');
+        
+        await db.collection('users').updateOne({ id: target.id }, { $set: { status: 'Active' } });
+        await db.collection('audit_logs').insertOne({ action: 'Reinstated', actor_id: user.id, target_id: target.id, details: 'Account restored', created_at: new Date() });
+        sendLog(process.env.CHANNEL_AUDIT, `Personnel: Reinstated`, `**By:** ${user.username}\n**User:** ${target.username}`, '#2ecc71');
+        interaction.reply({ content: `✅ ${target.username} has been reinstated.`, ephemeral: true });
     }
 
     if (commandName === 'reset-shifts') {
-        if (!member.roles.cache.has(process.env.ROLE_EXEC)) {
-            return interaction.reply({ content: "❌ Only the Executive Board can reset shifts.", ephemeral: true });
-        }
+        if (!member.roles.cache.has(process.env.ROLE_EXEC)) return interaction.reply({ content: "❌ Only Executive can reset shifts.", ephemeral: true });
         await db.collection('users').updateMany({}, { $set: { weekly_minutes: 0 } });
-        interaction.reply({ content: "✅ All weekly hours have been reset to 0. All-time hours are safe.", ephemeral: true });
+        interaction.reply({ content: "✅ All weekly hours reset to 0.", ephemeral: true });
     }
 
-    if (commandName === 'stats') {
-        const dbUser = await db.collection('users').findOne({ id: user.id });
-        if (!dbUser) return interaction.reply({ content: "You must log into the website first.", ephemeral: true });
-        interaction.reply({ embeds: [new EmbedBuilder().setTitle(`${user.username}'s Stats`).addFields(
-            { name: 'Rank', value: dbUser.rank || 'Unranked', inline: true }, 
-            { name: 'Weekly Hours', value: `${((dbUser.weekly_minutes || 0) / 60).toFixed(1)}`, inline: true }, 
-            { name: 'Total Hours', value: `${((dbUser.total_minutes || 0) / 60).toFixed(1)}`, inline: true }
-        ).setColor(COLOR_NAVY)] });
+    if (commandName === 'announce') {
+        if (!member.roles.cache.has(process.env.ROLE_MGMT) && !member.roles.cache.has(process.env.ROLE_EXEC)) return interaction.reply({ content: "❌ Denied.", ephemeral: true });
+        const title = interaction.options.getString('title');
+        const message = interaction.options.getString('message');
+
+        await db.collection('announcements').insertOne({ title, content: message, author_id: user.id, created_at: new Date(), pinned: 0 });
+        const embed = new EmbedBuilder().setTitle(`📢 ${title}`).setDescription(message).setColor(COLOR_GOLD).setFooter({ text: `Posted by ${user.username}` }).setTimestamp();
+        try {
+            const channel = await bot.channels.fetch(process.env.CHANNEL_ANNOUNCE);
+            if (channel) await channel.send({ embeds: [embed] });
+        } catch (err) { console.error(err); }
+        interaction.reply({ content: "✅ Announcement posted.", ephemeral: true });
     }
 
-    if (commandName === 'profile') {
+    // Division Apps
+    if (commandName === 'app-approve' || commandName === 'app-deny') {
+        if (!member.roles.cache.has(process.env.ROLE_MGMT) && !member.roles.cache.has(process.env.ROLE_EXEC)) return interaction.reply({ content: "❌ Denied.", ephemeral: true });
         const target = interaction.options.getUser('user');
-        const dbUser = await db.collection('users').findOne({ id: target.id });
-        if (!dbUser) return interaction.reply({ content: "That user is not in the database.", ephemeral: true });
-        
-        const embed = new EmbedBuilder()
-            .setTitle(`👤 Profile: ${dbUser.username}`)
-            .setThumbnail(dbUser.avatar_url || LOGO_URL)
-            .addFields(
-                { name: 'Rank', value: dbUser.rank || 'Unranked', inline: true },
-                { name: 'Weekly Hours', value: `${((dbUser.weekly_minutes || 0) / 60).toFixed(1)}`, inline: true },
-                { name: 'Total Hours', value: `${((dbUser.total_minutes || 0) / 60).toFixed(1)}`, inline: true }
-            ).setColor(COLOR_GOLD);
-        interaction.reply({ embeds: [embed] });
+        const division = interaction.options.getString('division');
+        const passed = commandName === 'app-approve';
+
+        try {
+            const targetMember = await interaction.guild.members.fetch(target.id);
+            if (passed) {
+                if (division === 'HOD') { await targetMember.roles.add(process.env.PASSED_HOD_1); await targetMember.roles.add(process.env.PASSED_HOD_2); }
+                if (division === 'COD') { await targetMember.roles.add(process.env.PASSED_COD_1); await targetMember.roles.add(process.env.PASSED_COD_2); }
+                if (division === 'CCD') { await targetMember.roles.add(process.env.PASSED_CCD_1); await targetMember.roles.add(process.env.PASSED_CCD_2); }
+            }
+            await db.collection('certifications').insertOne({ user_id: target.id, cert_type: division, status: passed ? 'Passed' : 'Failed', grader_id: user.id, notes: 'Discord Command', graded_at: new Date() });
+            
+            const embed = new EmbedBuilder().setTitle(`App ${passed ? 'Approved' : 'Denied'}`).setDescription(`<@${target.id}>`).setColor(passed ? '#2ecc71' : '#e74c3c');
+            targetMember.send({ embeds: [embed] }).catch(()=>{});
+            interaction.reply({ content: `✅ App ${passed ? 'approved' : 'denied'} for ${target.username}.`, ephemeral: true });
+        } catch (err) { interaction.reply({ content: "Error processing app.", ephemeral: true }); }
     }
 });
 
@@ -374,9 +437,17 @@ async function startServer() {
                 else if (roles.includes(process.env.GRADER_CCD)) graderType = 'CCD';
 
                 const avatarUrl = userResponse.data.avatar ? `https://cdn.discordapp.com/avatars/${userResponse.data.id}/${userResponse.data.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/0.png`;
-                await db.collection('users').updateOne({ id: userResponse.data.id }, { $set: { username: userResponse.data.username, rank, rank_level: rankLevel, avatar_url: avatarUrl }, $setOnInsert: { total_minutes: 0, weekly_minutes: 0, status: 'Active' } }, { upsert: true });
+                
+                await db.collection('users').updateOne(
+                    { id: userResponse.data.id }, 
+                    { 
+                        $set: { username: userResponse.data.username, rank, rank_level: rankLevel, avatar_url: avatarUrl, status: 'Active' },
+                        $setOnInsert: { total_minutes: 0, weekly_minutes: 0 } 
+                    }, 
+                    { upsert: true }
+                );
 
-                req.session.user = { id: userResponse.data.id, username: userResponse.data.username, rank, rankLevel, graderType };
+                req.session.user = { id: userResponse.data.id, username: userResponse.data.username, rank, rankLevel, graderType, avatar_url: avatarUrl };
                 sendLog(process.env.CHANNEL_LOGIN, "Website Login", `**User:** ${rank} ${req.session.user.username}`, '#2ecc71');
                 res.redirect('/dashboard');
             } catch (error) { res.redirect('/'); }
@@ -403,7 +474,7 @@ async function startServer() {
                     const active = await db.collection('shifts').findOne({ user_id: userId, status: 'active' });
                     if (active) return res.status(400).json({ error: 'Already clocked in!' });
                     await member.roles.add(process.env.ROLE_ON_DUTY);
-                    await db.collection('shifts').insertOne({ user_id: userId, start_time: new Date(), status: 'active' });
+                    await db.collection('shifts').insertOne({ user_id: userId, shift_type: 'Website', start_time: new Date(), status: 'active' });
                     sendLog(process.env.CHANNEL_SHIFT, "Shift Started", `**User:** ${req.session.user.username}`, '#3498db');
                     res.json({ success: true });
                 } else if (action === 'End') {

@@ -3,382 +3,227 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>LCDOT Portal | Employee Dashboard</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <title>LCDOT Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { navy: '#0B1120', navyLight: '#151E32', gold: '#D4AF37', goldHover: '#b5952f' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] }
+                }
+            }
+        }
+    </script>
     <style>
-        :root { 
-            --navy: #172638; --primary: #245A8D; --gold: #D5A52A; --charcoal: #1E1F22; 
-            --white: #FFFFFF; --gray: #F1F3F5; --danger: #e74c3c; --success: #2ecc71;
-        }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--gray); color: var(--charcoal); display: flex; height: 100vh; overflow: hidden; }
-        
-        .sidebar { width: 260px; background: var(--navy); color: var(--white); display: flex; flex-direction: column; border-right: 4px solid var(--gold); overflow-y: auto; flex-shrink: 0; }
-        .sidebar h2 { font-family: 'Playfair Display', serif; text-align: center; padding: 25px 0; margin: 0; border-bottom: 1px solid rgba(255,255,255,0.1); color: var(--gold); font-size: 1.5rem; }
-        .nav-item { padding: 15px 25px; cursor: pointer; font-weight: 500; font-size: 0.95rem; border-left: 4px solid transparent; transition: 0.2s; color: #ccc; }
-        .nav-item:hover, .nav-item.active { background: rgba(255,255,255,0.05); border-left-color: var(--gold); color: var(--gold); }
-        .nav-item.logout { margin-top: auto; color: var(--danger); border-left-color: transparent; }
-        .nav-item.logout:hover { background: rgba(231, 76, 60, 0.1); }
-
-        .main-content { flex: 1; padding: 30px; overflow-y: auto; display: flex; flex-direction: column; gap: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: var(--white); padding: 20px 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-top: 4px solid var(--primary); }
-        .header h2 { margin: 0; font-family: 'Playfair Display', serif; color: var(--navy); }
-        .header p { margin: 5px 0 0 0; color: #666; font-size: 0.9rem; }
-        
-        .card { background: var(--white); padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); border-top: 4px solid var(--gold); display: none; }
-        .card.active { display: block; }
-        .card h3 { margin-top: 0; color: var(--primary); font-family: 'Playfair Display', serif; font-size: 1.6rem; border-bottom: 1px solid #eee; padding-bottom: 15px; margin-bottom: 25px; }
-        .card h4 { color: var(--navy); margin: 20px 0 10px 0; }
-        
-        input, select, textarea { width: 100%; padding: 12px 15px; border: 1px solid #ccc; border-radius: 4px; margin-bottom: 15px; font-family: inherit; font-size: 0.95rem; background: #fafafa; transition: border 0.2s; }
-        input:focus, select:focus, textarea:focus { border-color: var(--primary); outline: none; background: var(--white); }
-        button { background: var(--primary); color: var(--white); padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 0.95rem; transition: 0.2s; width: 100%; margin-bottom: 10px; }
-        button:hover { background: var(--navy); }
-        .btn-gold { background: var(--gold); color: var(--charcoal); }
-        .btn-gold:hover { background: #b88a1d; }
-        .btn-danger { background: var(--danger); }
-        .btn-danger:hover { background: #c0392b; }
-        .btn-success { background: var(--success); color: #000; }
-        
-        .table-container { overflow-x: auto; margin-top: 15px; }
-        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; min-width: 600px; }
-        th, td { padding: 15px; text-align: left; border-bottom: 1px solid #eee; }
-        th { background: var(--navy); color: var(--white); font-weight: 500; }
-        tr:hover { background: #fafafa; }
-        
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .grid-3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-        
-        .badge { padding: 5px 10px; border-radius: 4px; font-size: 0.8rem; font-weight: bold; display: inline-block; }
-        .badge-open { background: #3498db; color: white; }
-        .badge-progress { background: #f39c12; color: white; }
-        .badge-closed { background: var(--success); color: #000; }
-        .badge-suspended { background: var(--danger); color: white; }
-
-        .live-timer { font-size: 3rem; font-weight: bold; color: var(--primary); text-align: center; margin: 30px 0; font-family: monospace; letter-spacing: 2px; }
-        
-        @media print {
-            body { background: white; color: black; height: auto; overflow: visible; display: block; }
-            .sidebar, .header, .nav-item, button, .card:not(#tab-profile), .no-print { display: none !important; }
-            .main-content { padding: 0; display: block; }
-            #tab-profile { display: block !important; border: none; box-shadow: none; padding: 0; }
-            .print-header { display: block !important; text-align: center; border-bottom: 3px solid black; padding-bottom: 20px; margin-bottom: 30px; }
-            .print-header h1 { color: black !important; font-family: 'Playfair Display', serif; }
-            table { border: 1px solid black; }
-            th, td { border: 1px solid black; color: black; background: none !important; }
-        }
-        .print-header { display: none; }
-
-        @media (max-width: 768px) {
-            body { flex-direction: column; height: auto; overflow: auto; }
-            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 4px solid var(--gold); }
-            .nav-item { display: inline-block; padding: 10px 15px; border-left: none; border-bottom: 3px solid transparent; }
-            .nav-item.active { border-bottom-color: var(--gold); }
-            .main-content { padding: 15px; }
-            .grid-2 { grid-template-columns: 1fr; }
-        }
+        body { background-color: #0B1120; color: #E2E8F0; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0B1120; }
+        ::-webkit-scrollbar-thumb { background: #D4AF37; border-radius: 4px; }
+        .glass-panel { background: rgba(21, 30, 50, 0.8); border: 1px solid rgba(212, 175, 55, 0.15); backdrop-filter: blur(12px); }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
     </style>
 </head>
-<body>
-
-    <div class="sidebar">
-        <h2>LCDOT Portal</h2>
-        <div class="nav-item active" onclick="switchTab('dashboard', this)">Overview</div>
-        <div class="nav-item" onclick="switchTab('profile', this)">My Profile</div>
-        <div class="nav-item" onclick="switchTab('shifts', this)">Shift Management</div>
-        <div class="nav-item" onclick="switchTab('closures', this)">Road Closures</div>
-        <div class="nav-item" onclick="switchTab('ops', this)">Operations Center</div>
-        <div class="nav-item" onclick="switchTab('announcements', this)">Announcements</div>
-        <div class="nav-item" onclick="switchTab('resources', this)">Resource Library</div>
-        <div class="nav-item" onclick="switchTab('training', this)">Training Center</div>
-        <div class="nav-item" onclick="switchTab('personnel', this)" id="nav-personnel" style="display:none;">Personnel Directory</div>
-        <div class="nav-item" onclick="switchTab('certs', this)" id="nav-certs" style="display:none;">Certifications</div>
-        <div class="nav-item" onclick="switchTab('stats', this)" id="nav-stats" style="display:none;">Department Stats</div>
-        <div class="nav-item" onclick="switchTab('admin', this)" id="nav-admin" style="display:none;">Administration</div>
-        <div class="nav-item logout" onclick="window.location.href='/logout'">Log Out</div>
-    </div>
-
-    <div class="main-content">
-        
-        <div class="header">
-            <div>
-                <h2>Welcome, <span id="username">...</span></h2>
-                <p>Rank: <strong id="rank" style="color:var(--primary);"></strong> | Status: <strong id="status" style="color:var(--success);"></strong></p>
-            </div>
-            <div style="text-align: right;">
-                <p style="margin:0; font-size:0.85rem; text-transform:uppercase; letter-spacing:1px; color:#888;">Total Hours</p>
-                <h2 style="margin:0; color:var(--navy);" id="total-hours">0.0</h2>
-            </div>
+<body class="flex h-screen overflow-hidden font-sans">
+    
+    <!-- Sidebar -->
+    <aside class="w-64 glass-panel flex flex-col border-r border-gold/20 z-20">
+        <div class="h-20 flex items-center justify-center border-b border-gold/20">
+            <h1 class="font-serif text-xl font-bold text-gold tracking-widest">LCDOT PORTAL</h1>
         </div>
-
-        <!-- 1. OVERVIEW -->
-        <div class="card active" id="tab-dashboard">
-            <h3>Department Overview</h3>
-            <p>Welcome to the Lakeview City DOT internal portal. Use the navigation on the left to manage your shifts, view department resources, and access administrative tools based on your rank.</p>
-            <div class="grid-3" style="margin-top: 30px;">
-                <div style="background: var(--gray); padding: 20px; border-radius: 8px; border-left: 4px solid var(--primary);">
-                    <h4 style="margin: 0 0 10px 0;">Quick Actions</h4>
-                    <button onclick="switchTab('shifts', document.querySelectorAll('.nav-item')[2])">Clock In / Out</button>
-                    <button onclick="switchTab('resources', document.querySelectorAll('.nav-item')[6])" class="btn-gold">View Resources</button>
-                </div>
-            </div>
+        <nav class="flex-1 overflow-y-auto py-4">
+            <button onclick="switchTab('dashboard', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition active-tab">
+                <span class="font-semibold">Dashboard</span>
+            </button>
+            <button onclick="switchTab('shifts', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
+                <span class="font-semibold">Shift Management</span>
+            </button>
+            <button onclick="switchTab('profile', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
+                <span class="font-semibold">My Profile</span>
+            </button>
+            <button onclick="switchTab('roster', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
+                <span class="font-semibold">Personnel Directory</span>
+            </button>
+            <button onclick="switchTab('divisions', this)" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition">
+                <span class="font-semibold">Divisional Apps</span>
+            </button>
+            <button onclick="switchTab('admin', this)" id="nav-admin" class="nav-btn w-full flex items-center px-6 py-4 text-gray-300 hover:text-gold hover:bg-navyLight border-l-4 border-transparent transition hidden">
+                <span class="font-semibold text-red-400">Administration</span>
+            </button>
+        </nav>
+        <div class="p-4 border-t border-gold/20">
+            <a href="/logout" class="block text-center bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white py-2 rounded transition">Secure Logout</a>
         </div>
+    </aside>
 
-        <!-- 2. PROFILE -->
-        <div class="card" id="tab-profile">
-            <div class="print-header"><h1>Lakeview City Department of Transportation</h1><h3>Official Employee Service Record</h3><p>Generated on: <span id="print-date"></span></p></div>
-            <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 30px;" class="no-print">
-                <img id="profile-avatar" src="" alt="Avatar" style="width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--primary);">
+    <!-- Main Content -->
+    <main class="flex-1 overflow-y-auto relative">
+        <header class="glass-panel h-20 flex items-center justify-between px-8 sticky top-0 z-10 border-b border-gold/20">
+            <div class="flex items-center gap-4">
+                <img id="user-avatar" src="" class="w-10 h-10 rounded-full border border-gold">
                 <div>
-                    <h3 id="profile-username" style="margin: 0; border: none; padding: 0;">Username</h3>
-                    <p style="margin: 5px 0 0 0; font-size: 1.1rem;">Rank: <strong id="profile-rank" style="color: var(--primary);"></strong></p>
-                    <p style="margin: 5px 0 0 0; color: #666;">Join Date: <span id="profile-join"></span></p>
+                    <h2 class="text-white font-bold" id="user-name">Loading...</h2>
+                    <p class="text-xs text-gold" id="user-rank">Loading...</p>
                 </div>
             </div>
-            <div class="no-print" style="margin-bottom: 20px;"><button onclick="window.print()" class="btn-gold" style="width: auto;">🖨️ Print / Save Service Record</button></div>
-            <h4>Certifications</h4>
-            <div class="table-container"><table id="profile-certs-table"><thead><tr><th>Cert</th><th>Result</th><th>Date</th><th>Notes</th></tr></thead><tbody></tbody></table></div>
-            <h4 style="margin-top: 30px;">Recent Shifts</h4>
-            <div class="table-container"><table id="profile-shifts-table"><thead><tr><th>Date</th><th>Duration</th><th>Status</th></tr></thead><tbody></tbody></table></div>
-            <h4 style="margin-top: 30px;">Quiz Attempts</h4>
-            <div class="table-container"><table id="profile-quizzes-table"><thead><tr><th>Quiz</th><th>Score</th><th>Result</th><th>Date</th></tr></thead><tbody></tbody></table></div>
-        </div>
-
-        <!-- 3. SHIFTS -->
-        <div class="card" id="tab-shifts">
-            <h3>Shift Management</h3>
-            <p>Clock in to receive the On-Duty role in Discord and begin tracking your hours.</p>
-            <div class="live-timer" id="timer" style="display:none;">00:00:00</div>
-            <div class="grid-2">
-                <button class="btn-success" onclick="clockIn()" id="btn-in">Clock In</button>
-                <button class="btn-danger" onclick="clockOut()" id="btn-out" style="display:none;">Clock Out</button>
+            <div class="text-right">
+                <p class="text-xs text-gray-400 uppercase tracking-widest">Total Hours</p>
+                <p class="text-2xl font-bold text-white" id="total-hours">0.0</p>
             </div>
-        </div>
+        </header>
 
-        <!-- 4. CLOSURES -->
-        <div class="card" id="tab-closures">
-            <h3>Road Closures & Incidents</h3>
-            <div id="create-closure-section" style="display:none; margin-bottom: 30px; background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-                <h4>Report New Closure</h4>
-                <input type="text" id="cl-location" placeholder="Location">
-                <textarea id="cl-reason" placeholder="Reason..."></textarea>
-                <button class="btn-danger" onclick="reportClosure()">Report Closure</button>
-            </div>
-            <div class="table-container"><table id="closure-table"><thead><tr><th>Location</th><th>Reason</th><th>Reported By</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
-        </div>
-
-        <!-- 5. OPERATIONS -->
-        <div class="card" id="tab-ops">
-            <h3>Operations Center</h3>
-            <div id="create-wo-section" style="display:none; margin-bottom: 30px; background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-                <h4>Create Work Order</h4>
-                <input type="text" id="wo-title" placeholder="Title">
-                <textarea id="wo-desc" placeholder="Description..."></textarea>
-                <div class="grid-2"><select id="wo-priority"><option value="Low">Low</option><option value="Medium">Medium</option><option value="High">High</option></select><input type="text" id="wo-assigned" placeholder="Assigned To (Discord ID)"></div>
-                <button onclick="createWorkOrder()">Create Work Order</button>
-            </div>
-            <h4>Active Work Orders</h4>
-            <div class="table-container"><table id="wo-table"><thead><tr><th>Ref</th><th>Title</th><th>Priority</th><th>Assigned</th><th>Status</th><th>Action</th></tr></thead><tbody></tbody></table></div>
-        </div>
-
-        <!-- 6. ANNOUNCEMENTS -->
-        <div class="card" id="tab-announcements">
-            <h3>Department Announcements</h3>
-            <div id="create-ann-section" style="display:none; margin-bottom: 30px; background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-                <h4>Post New Announcement</h4>
-                <input type="text" id="ann-title" placeholder="Title">
-                <textarea id="ann-content" placeholder="Message..."></textarea>
-                <button class="btn-gold" onclick="postAnnouncement()">Publish Announcement</button>
-            </div>
-            <div id="announcement-list"></div>
-        </div>
-
-        <!-- 7. RESOURCES -->
-        <div class="card" id="tab-resources">
-            <h3>Resource Library</h3>
-            <div class="table-container"><table id="resource-table"><thead><tr><th>Name</th><th>Uploader</th><th>Date</th><th>Action</th></tr></thead><tbody></tbody></table></div>
-            <div id="upload-section" style="display:none; margin-top: 30px; border-top: 1px solid #eee; padding-top: 20px;">
-                <h4>Upload New Resource (Mgmt+)</h4>
-                <form id="uploadForm"><input type="file" id="fileInput" required><button type="submit" class="btn-gold">Upload</button></form>
-            </div>
-        </div>
-
-        <!-- 8. TRAINING -->
-        <div class="card" id="tab-training">
-            <h3>Training Center</h3>
-            <div id="quiz-list-container"><h4>Available Quizzes</h4><div class="grid-3" id="quiz-list"></div></div>
-            <div id="quiz-taking-container" style="display: none;">
-                <button onclick="location.reload()" style="width: auto; background: #666; margin-bottom: 20px;">&larr; Back</button>
-                <h4 id="quiz-title" style="font-size: 1.4rem;"></h4>
-                <form id="quiz-form"></form>
-                <button class="btn-gold" onclick="submitQuiz()" style="margin-top: 20px;">Submit Answers</button>
-            </div>
-            <div id="create-quiz-section" style="display:none; margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
-                <h4>Create New Quiz (Mgmt+)</h4>
-                <input type="text" id="qz-title" placeholder="Quiz Title">
-                <input type="text" id="qz-role" placeholder="Role ID to grant (Optional)">
-                <div id="question-container"></div>
-                <button onclick="addQuestionField()" class="btn-gold" style="width: auto; margin-bottom: 15px;">+ Add Question</button>
-                <button onclick="createQuiz()" class="btn-success">Save Full Quiz</button>
-            </div>
-        </div>
-
-        <!-- 9. PERSONNEL -->
-        <div class="card" id="tab-personnel">
-            <h3>Personnel Directory</h3>
-            <div class="table-container"><table id="personnel-table"><thead><tr><th>Username</th><th>Rank</th><th>Hours</th><th>Status</th></tr></thead><tbody></tbody></table></div>
-        </div>
-
-        <!-- 10. CERTS -->
-        <div class="card" id="tab-certs">
-            <h3>Certification Grading Center</h3>
-            <p>Your grader division: <strong id="grader-type" style="color:var(--primary);"></strong></p>
-            <div style="background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee; margin-top: 20px;">
-                <input type="text" id="cert-id" placeholder="Operator's Discord ID">
-                <textarea id="cert-notes" placeholder="Notes..."></textarea>
-                <div class="grid-2"><button class="btn-success" onclick="grade(true)">Pass</button><button class="btn-danger" onclick="grade(false)">Fail</button></div>
-            </div>
-        </div>
-
-        <!-- 11. STATS -->
-        <div class="card" id="tab-stats">
-            <h3>Department Statistics</h3>
-            <div class="grid-3" style="margin-bottom: 30px;">
-                <div style="background: var(--navy); color: white; padding: 20px; border-radius: 8px; text-align: center;">
-                    <h1 id="stat-total-hours" style="color: var(--gold); margin: 0;">0</h1><p>Total Dept Hours</p>
-                </div>
-                <div style="background: var(--navy); color: white; padding: 20px; border-radius: 8px; text-align: center;">
-                    <h1 id="stat-active" style="color: var(--success); margin: 0;">0</h1><p>Active Employees</p>
-                </div>
-                <div style="background: var(--navy); color: white; padding: 20px; border-radius: 8px; text-align: center;">
-                    <h1 id="stat-certs" style="color: var(--primary); margin: 0;">0</h1><p>Certifications Passed</p>
+        <div class="p-8 max-w-6xl mx-auto">
+            <!-- Dashboard Tab -->
+            <div id="tab-dashboard" class="tab-content active">
+                <h3 class="font-serif text-3xl text-gold mb-6">Command Overview</h3>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    <div class="glass-panel p-6 rounded-lg">
+                        <p class="text-gray-400 text-sm">System Status</p>
+                        <p class="text-green-400 font-bold text-xl mt-2">Operational</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-lg">
+                        <p class="text-gray-400 text-sm">Current Shift</p>
+                        <p class="text-white font-bold text-xl mt-2" id="shift-status">Off Duty</p>
+                    </div>
+                    <div class="glass-panel p-6 rounded-lg">
+                        <p class="text-gray-400 text-sm">Announcements</p>
+                        <p class="text-gold font-bold text-xl mt-2">Check Discord</p>
+                    </div>
                 </div>
             </div>
-            <h4>Top 5 Most Active Employees</h4>
-            <div class="table-container">
-                <table id="leaderboard-table">
-                    <thead><tr><th>#</th><th>Username</th><th>Rank</th><th>Total Hours</th></tr></thead>
-                    <tbody></tbody>
-                </table>
-            </div>
-        </div>
 
-        <!-- 12. ADMIN -->
-        <div class="card" id="tab-admin">
-            <h3>Administration Panel</h3>
+            <!-- Shift Tab -->
+            <div id="tab-shifts" class="tab-content">
+                <h3 class="font-serif text-3xl text-gold mb-6">Shift Management</h3>
+                <div class="glass-panel p-8 rounded-xl max-w-xl">
+                    <div class="text-center mb-8">
+                        <p class="text-gray-400 mb-2">Live Timer</p>
+                        <p class="text-5xl font-mono text-white" id="timer">00:00:00</p>
+                    </div>
+                    <div class="flex gap-4">
+                        <button onclick="clockIn()" id="btn-in" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded transition">Clock In</button>
+                        <button onclick="clockOut()" id="btn-out" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded transition hidden">Clock Out</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Tab -->
+            <div id="tab-profile" class="tab-content">
+                <h3 class="font-serif text-3xl text-gold mb-6">Service Record</h3>
+                <div class="glass-panel p-8 rounded-xl">
+                    <div class="flex items-center gap-6 mb-8 border-b border-gray-700 pb-8">
+                        <img id="profile-avatar" src="" class="w-24 h-24 rounded-full border-2 border-gold">
+                        <div>
+                            <h2 class="text-2xl font-bold text-white" id="profile-name">Loading</h2>
+                            <p class="text-gold" id="profile-rank">Loading</p>
+                        </div>
+                    </div>
+                    <h4 class="text-white font-bold mb-4">Divisional Applications</h4>
+                    <div id="profile-certs" class="space-y-3"></div>
+                </div>
+            </div>
+
+            <!-- Roster Tab -->
+            <div id="tab-roster" class="tab-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h3 class="font-serif text-3xl text-gold">Personnel Directory</h3>
+                    <input type="text" id="roster-search" placeholder="Search..." class="bg-navyLight border border-gray-600 rounded px-4 py-2 text-white focus:outline-none focus:border-gold">
+                </div>
+                <div class="glass-panel rounded-xl overflow-hidden">
+                    <table class="w-full text-left">
+                        <thead class="bg-navyLight border-b border-gray-700">
+                            <tr>
+                                <th class="p-4 text-gray-400 font-semibold">Name</th>
+                                <th class="p-4 text-gray-400 font-semibold">Rank</th>
+                                <th class="p-4 text-gray-400 font-semibold">Hours</th>
+                                <th class="p-4 text-gray-400 font-semibold">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="roster-body" class="divide-y divide-gray-800"></tbody>
+                    </table>
+                </div>
+            </div>
             
-            <h4>Personnel Management</h4>
-            <div style="background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-                <input type="text" id="admin-target-id" placeholder="Enter Discord ID">
-                <div class="grid-2">
-                    <select id="promote-rank">
-                        <option value="Junior Operator">Junior Operator</option><option value="Operator">Operator</option>
-                        <option value="Senior Operator">Senior Operator</option><option value="Specialist">Specialist</option>
-                        <option value="Crew Supervisor">Crew Supervisor</option><option value="Field Supervisor">Field Supervisor</option>
-                        <option value="Management Team">Management Team</option><option value="Executive Board">Executive Board</option>
-                    </select>
-                    <button onclick="adminAction('Promote')" class="btn-success">Promote</button>
-                </div>
-                <div class="grid-2" style="margin-top: 10px;">
-                    <button class="btn-danger" onclick="adminAction('Suspend')">Suspend</button>
-                    <button class="btn-gold" onclick="adminAction('Reinstate')">Reinstate</button>
+            <!-- Divisions Tab (App Grading) -->
+            <div id="tab-divisions" class="tab-content">
+                <h3 class="font-serif text-3xl text-gold mb-6">Divisional Applications</h3>
+                <div class="glass-panel p-8 rounded-xl">
+                    <p class="text-gray-400 mb-6">Grade applicants for your division. Passing them will assign their Discord roles and send them a DM.</p>
+                    <div id="grader-panel" class="hidden">
+                        <p class="text-gold mb-4">Your Division: <span id="grader-division" class="font-bold"></span></p>
+                        <input type="text" id="cert-id" placeholder="Applicant Discord ID" class="w-full bg-navyLight border border-gray-600 rounded px-4 py-3 text-white mb-4">
+                        <textarea id="cert-notes" placeholder="Feedback/Notes..." class="w-full bg-navyLight border border-gray-600 rounded px-4 py-3 text-white mb-4"></textarea>
+                        <div class="flex gap-4">
+                            <button onclick="gradeApp(true)" class="flex-1 bg-green-500 hover:bg-green-600 text-white font-bold py-3 rounded">Approve Application</button>
+                            <button onclick="gradeApp(false)" class="flex-1 bg-red-500 hover:bg-red-600 text-white font-bold py-3 rounded">Deny Application</button>
+                        </div>
+                    </div>
+                    <div id="no-grader" class="text-gray-500 italic">You do not have Division Lead permissions.</div>
                 </div>
             </div>
 
-            <h4 style="margin-top: 30px;">Internal Affairs (Add Disciplinary Note)</h4>
-            <div style="background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee;">
-                <input type="text" id="note-target-id" placeholder="Discord ID">
-                <textarea id="note-text" placeholder="Reason for note (e.g., Verbal warning for uniform)..."></textarea>
-                <button onclick="addNote()" class="btn-gold">Submit Note</button>
-            </div>
-
-            <h4 style="margin-top: 30px;">Active Shifts</h4>
-            <div class="table-container"><table id="active-shifts-table"><thead><tr><th>User</th><th>Rank</th><th>Clocked In</th><th>Action</th></tr></thead><tbody></tbody></table></div>
-
-            <h4 style="margin-top: 30px;">Data Exports</h4>
-            <button onclick="window.open('/api/admin/export-shifts')" class="btn-gold" style="width: auto;">📊 Download All Shifts (CSV)</button>
-
-            <h4 style="margin-top: 30px;">Website Audit Logs</h4>
-            <div class="table-container"><table id="audit-table"><thead><tr><th>Date</th><th>Action</th><th>Actor</th><th>Target</th><th>Details</th></tr></thead><tbody></tbody></table></div>
         </div>
-
-    </div>
+    </main>
 
     <script>
         let user = {};
-        let timerInterval, startTime;
-        let currentQuizId = null;
+        let timerInterval;
+
+        // Navigation
+        function switchTab(tabId, btn) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-btn').forEach(b => { b.classList.remove('active-tab', 'border-gold', 'text-gold'); b.classList.add('border-transparent'); });
+            
+            document.getElementById('tab-' + tabId).classList.add('active');
+            btn.classList.add('active-tab', 'border-gold', 'text-gold');
+            btn.classList.remove('border-transparent');
+        }
 
         async function init() {
             const res = await fetch('/api/me');
             if (!res.ok) return window.location.href = '/';
             user = await res.json();
+
+            // Set Header
+            document.getElementById('user-name').innerText = user.username;
+            document.getElementById('user-rank').innerText = user.rank;
+            document.getElementById('user-avatar').src = user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
             
-            document.getElementById('username').innerText = user.username;
-            document.getElementById('rank').innerText = user.rank;
-            document.getElementById('status').innerText = user.status || 'Active';
-            if (user.status === 'Suspended') document.getElementById('status').style.color = 'var(--danger)';
-
-            if (user.rankLevel >= 5) {
-                document.getElementById('create-wo-section').style.display = 'block';
-                document.getElementById('create-closure-section').style.display = 'block';
-            }
-            if (user.rankLevel >= 6) {
-                document.getElementById('nav-personnel').style.display = 'block';
-                document.getElementById('nav-stats').style.display = 'block'; // Supervisors see stats
-            }
-            if (user.rankLevel >= 7) {
-                document.getElementById('nav-admin').style.display = 'block';
-                document.getElementById('create-ann-section').style.display = 'block';
-                document.getElementById('upload-section').style.display = 'block';
-                document.getElementById('create-quiz-section').style.display = 'block';
-                addQuestionField(); // Initialize quiz builder with 1 question block
-            }
+            // Admin Panel visibility
+            if (user.rankLevel >= 7) document.getElementById('nav-admin').classList.remove('hidden');
+            
+            // Grader visibility
             if (user.graderType) {
-                document.getElementById('nav-certs').style.display = 'block';
-                document.getElementById('grader-type').innerText = user.graderType;
+                document.getElementById('grader-panel').classList.remove('hidden');
+                document.getElementById('no-grader').classList.add('hidden');
+                document.getElementById('grader-division').innerText = user.graderType;
             }
 
-            loadStats(); loadResources(); loadWorkOrders(); loadAnnouncements(); loadClosures(); loadQuizzes(); loadProfile();
-            if (user.rankLevel >= 6) { loadPersonnel(); loadActiveShifts(); loadDepartmentStats(); }
-            if (user.rankLevel >= 7) loadAuditLogs();
-        }
-
-        function switchTab(tabId, el) {
-            document.querySelectorAll('.card').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-            document.getElementById('tab-' + tabId).classList.add('active');
-            el.classList.add('active');
-        }
-
-        async function loadProfile() {
-            const res = await fetch('/api/profile');
-            const data = await res.json();
-            document.getElementById('profile-avatar').src = data.user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
-            document.getElementById('profile-username').innerText = data.user.username;
-            document.getElementById('profile-rank').innerText = data.user.rank;
-            document.getElementById('profile-join').innerText = new Date(data.user.joined_at).toLocaleDateString();
-            document.getElementById('print-date').innerText = new Date().toLocaleString();
-
-            document.querySelector('#profile-certs-table tbody').innerHTML = data.certs.map(c => `<tr><td><strong>${c.cert_type}</strong></td><td><span class="badge badge-${c.status === 'Passed' ? 'closed' : 'suspended'}">${c.status}</span></td><td>${new Date(c.graded_at).toLocaleDateString()}</td><td>${c.notes || 'None'}</td></tr>`).join('') || '<tr><td colspan="4">No certifications.</td></tr>';
-            document.querySelector('#profile-shifts-table tbody').innerHTML = data.shifts.map(s => `<tr><td>${new Date(s.start_time).toLocaleString()}</td><td>${s.duration_minutes} mins</td><td><span class="badge badge-closed">${s.status}</span></td></tr>`).join('') || '<tr><td colspan="3">No shifts.</td></tr>';
-            document.querySelector('#profile-quizzes-table tbody').innerHTML = data.quizzes.map(q => `<tr><td>${q.title}</td><td>${q.score}</td><td><span class="badge badge-${q.passed ? 'closed' : 'suspended'}">${q.passed ? 'Passed' : 'Failed'}</span></td><td>${new Date(q.created_at).toLocaleDateString()}</td></tr>`).join('') || '<tr><td colspan="4">No quizzes.</td></tr>';
+            loadStats();
+            loadProfile();
+            loadRoster();
         }
 
         async function loadStats() {
             const res = await fetch('/api/my-stats');
             const data = await res.json();
             document.getElementById('total-hours').innerText = (data.totalMinutes / 60).toFixed(1);
+
             if (data.activeShift) {
-                startTime = new Date(data.startTime).getTime();
-                document.getElementById('btn-in').style.display = 'none';
-                document.getElementById('btn-out').style.display = 'block';
-                document.getElementById('timer').style.display = 'block';
-                startTimer();
+                document.getElementById('btn-in').classList.add('hidden');
+                document.getElementById('btn-out').classList.remove('hidden');
+                document.getElementById('shift-status').innerText = "On Duty";
+                document.getElementById('shift-status').classList.replace('text-white', 'text-green-400');
+                startTimer(new Date(data.startTime).getTime());
+            } else {
+                document.getElementById('shift-status').innerText = "Off Duty";
             }
         }
 
-        function startTimer() {
+        function startTimer(startTime) {
             clearInterval(timerInterval);
             timerInterval = setInterval(() => {
                 const diff = Date.now() - startTime;
@@ -389,144 +234,65 @@
             }, 1000);
         }
 
-        async function clockIn() { const res = await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'Start'}) }); if (res.ok) location.reload(); else alert((await res.json()).error); }
-        async function clockOut() { const res = await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'End'}) }); if (res.ok) location.reload(); else alert((await res.json()).error); }
-
-        async function loadClosures() {
-            const res = await fetch('/api/closures'); const closures = await res.json();
-            document.querySelector('#closure-table tbody').innerHTML = closures.map(c => `<tr><td><strong>${c.location}</strong></td><td>${c.reason}</td><td>${c.reported_by}</td><td><span class="badge badge-${c.status === 'Active' ? 'suspended' : 'closed'}">${c.status}</span></td><td>${user.rankLevel >= 5 && c.status === 'Active' ? `<button onclick="resolveClosure(${c.id})" style="padding:5px 10px; width:auto; font-size:0.8rem; background:var(--success);">Resolve</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="5">No active closures.</td></tr>';
-        }
-        async function reportClosure() { const location = document.getElementById('cl-location').value; const reason = document.getElementById('cl-reason').value; if (!location || !reason) return alert("Fill all fields"); await fetch('/api/closures', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({location, reason}) }); location.reload(); }
-        async function resolveClosure(id) { if(!confirm("Resolved?")) return; await fetch('/api/closures/status', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, status: 'Resolved'}) }); location.reload(); }
-
-        async function loadWorkOrders() {
-            const res = await fetch('/api/workorders'); const wos = await res.json();
-            document.querySelector('#wo-table tbody').innerHTML = wos.map(w => `<tr><td><strong>${w.ref_num}</strong></td><td>${w.title}</td><td><span class="badge ${w.priority === 'High' ? 'badge-suspended' : 'badge-open'}">${w.priority}</span></td><td>${w.assigned_to}</td><td><span class="badge badge-${w.status.toLowerCase()}">${w.status}</span></td><td>${user.rankLevel >= 5 && w.status !== 'Closed' ? `<button onclick="updateWO(${w.id}, 'Closed')" style="padding:5px 10px; width:auto; font-size:0.8rem;">Close</button>` : ''}</td></tr>`).join('') || '<tr><td colspan="6">No work orders.</td></tr>';
-        }
-        async function createWorkOrder() { const title = document.getElementById('wo-title').value; const description = document.getElementById('wo-desc').value; const priority = document.getElementById('wo-priority').value; const assigned_to = document.getElementById('wo-assigned').value; if (!title || !assigned_to) return alert("Fill fields"); await fetch('/api/workorders', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, description, priority, assigned_to}) }); location.reload(); }
-        async function updateWO(id, status) { await fetch('/api/workorders/status', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({id, status}) }); location.reload(); }
-
-        async function loadAnnouncements() {
-            const res = await fetch('/api/announcements'); const anns = await res.json();
-            document.getElementById('announcement-list').innerHTML = anns.map(a => `<div style="background:#fafafa; padding:20px; border-left:5px solid var(--gold); margin-bottom:20px; border-radius:4px;"><h4 style="margin:0 0 5px 0; color:var(--navy);">${a.title} ${a.pinned ? '📌' : ''}</h4><p style="margin:0 0 15px 0; font-size:0.85rem; color:#888;">Author: ${a.author_id} | ${new Date(a.created_at).toLocaleString()}</p><p>${a.content}</p></div>`).join('') || '<p>No announcements.</p>';
-        }
-        async function postAnnouncement() { const title = document.getElementById('ann-title').value; const content = document.getElementById('ann-content').value; if (!title || !content) return alert("Fill fields"); await fetch('/api/announcements', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, content}) }); location.reload(); }
-
-        async function loadResources() {
-            const res = await fetch('/api/resources'); const files = await res.json();
-            document.querySelector('#resource-table tbody').innerHTML = files.map(f => `<tr><td><strong>${f.name}</strong></td><td>${f.uploader_id}</td><td>${new Date(f.uploaded_at).toLocaleDateString()}</td><td><a href="/uploads/${f.filename}" target="_blank" style="color:var(--primary); font-weight:bold;">Download</a></td></tr>`).join('') || '<tr><td colspan="4">No resources.</td></tr>';
-        }
-        document.getElementById('uploadForm')?.addEventListener('submit', async (e) => { e.preventDefault(); const formData = new FormData(); formData.append('file', document.getElementById('fileInput').files[0]); const res = await fetch('/api/upload-resource', { method: 'POST', body: formData }); if (res.ok) location.reload(); else alert("Upload failed."); });
-
-        // --- QUIZZES ---
-        async function loadQuizzes() {
-            const res = await fetch('/api/quizzes'); const quizzes = await res.json();
-            document.getElementById('quiz-list').innerHTML = quizzes.map(q => `<div class="card" style="padding:20px; display:block; border-top:3px solid var(--primary);"><h4 style="margin:0; color:var(--navy);">${q.title}</h4><p style="font-size:0.9rem; color:#666; margin:5px 0 15px 0;">${q.question_count} Questions</p><button onclick="startQuiz(${q.id}, '${q.title}')" style="width:auto; padding:8px 16px;">Start Quiz</button></div>`).join('') || '<p>No quizzes available.</p>';
-        }
-        async function startQuiz(id, title) {
-            currentQuizId = id; document.getElementById('quiz-list-container').style.display = 'none'; document.getElementById('quiz-taking-container').style.display = 'block'; document.getElementById('quiz-title').innerText = title;
-            const res = await fetch(`/api/quizzes/${id}`); const questions = await res.json();
-            document.getElementById('quiz-form').innerHTML = questions.map((q, index) => `<div style="background:#fafafa; padding:20px; margin-bottom:20px; border-radius:8px; border:1px solid #eee;"><p style="font-weight:600; font-size:1.1rem; margin-bottom:15px;">${index + 1}. ${q.question}</p><label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="radio" name="q-${q.id}" value="a" style="width:auto; margin-right:10px;"> ${q.option_a}</label><label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="radio" name="q-${q.id}" value="b" style="width:auto; margin-right:10px;"> ${q.option_b}</label><label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="radio" name="q-${q.id}" value="c" style="width:auto; margin-right:10px;"> ${q.option_c}</label><label style="display:block; margin-bottom:10px; cursor:pointer;"><input type="radio" name="q-${q.id}" value="d" style="width:auto; margin-right:10px;"> ${q.option_d}</label></div>`).join('');
-        }
-        async function submitQuiz() {
-            const form = document.getElementById('quiz-form'); const answers = []; const questionDivs = form.querySelectorAll('div[style*="background:#fafafa"]');
-            questionDivs.forEach(div => { const radios = div.querySelectorAll('input[type="radio"]'); const qId = radios[0].name.split('-')[1]; let selected = null; radios.forEach(r => { if(r.checked) selected = r.value; }); if(selected) answers.push({ id: parseInt(qId), selected }); });
-            if (answers.length === 0) return alert("Answer at least one.");
-            const res = await fetch('/api/quizzes/submit', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ quizId: currentQuizId, answers }) });
-            const result = await res.json();
-            alert(`Score: ${result.score}/${result.total}\nResult: ${result.passed ? 'PASSED' : 'FAILED'}`); location.reload();
+        async function clockIn() {
+            await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'Start'}) });
+            location.reload();
         }
         
-        // Multi-Question Builder logic
-        function addQuestionField() {
-            const container = document.getElementById('question-container');
-            const div = document.createElement('div');
-            div.className = 'question-block';
-            div.style = 'background: #fafafa; padding: 20px; border-radius: 8px; border: 1px solid #eee; margin-bottom: 15px;';
-            div.innerHTML = `
-                <input type="text" class="q-text" placeholder="Question text" required>
-                <div class="grid-2">
-                    <input type="text" class="q-a" placeholder="Option A" required>
-                    <input type="text" class="q-b" placeholder="Option B" required>
-                    <input type="text" class="q-c" placeholder="Option C" required>
-                    <input type="text" class="q-d" placeholder="Option D" required>
-                </div>
-                <select class="q-correct"><option value="a">Option A is correct</option><option value="b">Option B is correct</option><option value="c">Option C is correct</option><option value="d">Option D is correct</option></select>
-            `;
-            container.appendChild(div);
-        }
-
-        async function createQuiz() {
-            const title = document.getElementById('qz-title').value;
-            const roleId = document.getElementById('qz-role').value;
-            if (!title) return alert("Enter a title.");
-
-            const questions = [];
-            document.querySelectorAll('.question-block').forEach(block => {
-                questions.push({
-                    text: block.querySelector('.q-text').value,
-                    a: block.querySelector('.q-a').value,
-                    b: block.querySelector('.q-b').value,
-                    c: block.querySelector('.q-c').value,
-                    d: block.querySelector('.q-d').value,
-                    correct: block.querySelector('.q-correct').value
-                });
-            });
-
-            if (questions.length === 0 || !questions[0].text) return alert("Add at least one question.");
-
-            await fetch('/api/quizzes', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ title, description: '', roleId, questions }) });
+        async function clockOut() {
+            await fetch('/api/shift', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({action: 'End'}) });
             location.reload();
         }
 
-        // --- ADMIN & PERSONNEL ---
-        async function loadPersonnel() {
-            const res = await fetch('/api/personnel'); const users = await res.json();
-            document.querySelector('#personnel-table tbody').innerHTML = users.map(u => `<tr><td><strong>${u.username}</strong></td><td><span style="color:var(--primary); font-weight:bold;">${u.rank}</span></td><td>${(u.total_minutes / 60).toFixed(1)}</td><td><span class="badge ${u.status === 'Suspended' ? 'badge-suspended' : 'badge-closed'}">${u.status}</span></td></tr>`).join('');
-        }
-        async function grade(passed) { const targetId = document.getElementById('cert-id').value; const notes = document.getElementById('cert-notes').value; if (!targetId) return alert("Enter ID"); const res = await fetch('/api/certify', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({targetId, passed, notes}) }); if (res.ok) { alert("Result saved!"); location.reload(); } else alert((await res.json()).error); }
-        
-        async function adminAction(action) {
-            const targetId = document.getElementById('admin-target-id').value;
-            const value = action === 'Promote' ? document.getElementById('promote-rank').value : '';
-            if (!targetId) return alert("Enter ID");
-            if (!confirm(`Confirm ${action}?`)) return;
-            const res = await fetch('/api/admin/action', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({targetId, action, value}) });
-            if (res.ok) { alert("Success!"); location.reload(); } else alert((await res.json()).error);
-        }
-
-        async function addNote() {
-            const targetId = document.getElementById('note-target-id').value;
-            const note = document.getElementById('note-text').value;
-            if (!targetId || !note) return alert("Fill fields");
-            const res = await fetch('/api/admin/notes', { method: 'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({targetId, note}) });
-            if (res.ok) { alert("Note added securely."); document.getElementById('note-target-id').value = ''; document.getElementById('note-text').value = ''; } else alert("Error");
-        }
-
-        async function loadActiveShifts() {
-            const res = await fetch('/api/admin/active-shifts'); const shifts = await res.json();
-            document.querySelector('#active-shifts-table tbody').innerHTML = shifts.map(s => `<tr><td><strong>${s.username}</strong></td><td>${s.rank}</td><td>${new Date(s.start_time).toLocaleTimeString()}</td><td><button onclick="forceClockout(${s.id}, '${s.user_id}', '${s.username}')" class="btn-danger" style="padding: 5px 10px; width: auto; font-size: 0.8rem;">Force Out</button></td></tr>`).join('') || '<tr><td colspan="4">No active shifts.</td></tr>';
-        }
-        async function forceClockout(shiftId, userId, targetName) {
-            const reason = prompt(`Reason for forcing ${targetName} out:`);
-            if (!reason) return;
-            const res = await fetch('/api/admin/force-clockout', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shiftId, userId, reason }) });
-            if (res.ok) { alert("Clocked out."); location.reload(); } else alert("Error");
-        }
-
-        async function loadDepartmentStats() {
-            const res = await fetch('/api/stats');
+        async function loadProfile() {
+            const res = await fetch('/api/profile');
             const data = await res.json();
-            document.getElementById('stat-total-hours').innerText = (data.totalDeptHours / 60).toFixed(0);
-            document.getElementById('stat-active').innerText = data.activeCount;
-            document.getElementById('stat-certs').innerText = data.certCount;
-            
-            document.querySelector('#leaderboard-table tbody').innerHTML = data.topHours.map((u, i) => `<tr><td>${i+1}</td><td><strong>${u.username}</strong></td><td>${u.rank}</td><td>${(u.total_minutes / 60).toFixed(1)}</td></tr>`).join('');
+            document.getElementById('profile-avatar').src = data.user.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png';
+            document.getElementById('profile-name').innerText = data.user.username;
+            document.getElementById('profile-rank').innerText = data.user.rank;
+
+            let certHtml = data.certs.map(c => `
+                <div class="flex justify-between items-center bg-navyLight p-4 rounded border border-gray-700">
+                    <span class="font-bold text-white">${c.cert_type}</span>
+                    <span class="px-2 py-1 text-xs font-bold rounded ${c.status === 'Passed' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${c.status}</span>
+                </div>
+            `).join('');
+            document.getElementById('profile-certs').innerHTML = certHtml || '<p class="text-gray-500">No applications processed yet.</p>';
         }
 
-        async function loadAuditLogs() {
-            const res = await fetch('/api/audit-logs'); const logs = await res.json();
-            document.querySelector('#audit-table tbody').innerHTML = logs.map(l => `<tr><td style="font-size:0.8rem; color:#666;">${new Date(l.created_at).toLocaleString()}</td><td><strong>${l.action}</strong></td><td>${l.actor_name || l.actor_id}</td><td>${l.target_name || l.target_id || 'N/A'}</td><td style="font-size:0.9rem;">${l.details || ''}</td></tr>`).join('');
+        async function loadRoster() {
+            if (user.rankLevel < 6) return; // Only Supervisors+
+            const res = await fetch('/api/personnel');
+            const users = await res.json();
+            
+            document.getElementById('roster-body').innerHTML = users.map(u => `
+                <tr class="hover:bg-navyLight transition">
+                    <td class="p-4 flex items-center gap-3">
+                        <img src="${u.avatar_url || 'https://cdn.discordapp.com/embed/avatars/0.png'}" class="w-8 h-8 rounded-full">
+                        <span class="font-semibold text-white">${u.username}</span>
+                    </td>
+                    <td class="p-4 text-gold">${u.rank}</td>
+                    <td class="p-4 text-gray-300">${((u.total_minutes || 0) / 60).toFixed(1)}</td>
+                    <td class="p-4"><span class="px-2 py-1 text-xs font-bold rounded ${u.status === 'Active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}">${u.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        async function gradeApp(passed) {
+            const targetId = document.getElementById('cert-id').value;
+            const notes = document.getElementById('cert-notes').value;
+            if (!targetId) return alert("Enter a Discord ID.");
+            
+            const res = await fetch('/api/certify', {
+                method: 'POST', headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ targetId, passed, notes })
+            });
+            if (res.ok) {
+                alert(`Application ${passed ? 'Approved' : 'Denied'}!`);
+                document.getElementById('cert-id').value = '';
+                document.getElementById('cert-notes').value = '';
+                loadProfile();
+            }
         }
 
         init();

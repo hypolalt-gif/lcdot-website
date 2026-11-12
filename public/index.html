@@ -1,150 +1,82 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="scroll-smooth">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lakeview City DOT | Official Portal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=Playfair+Display:wght@700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: { navy: '#0B1120', navyLight: '#151E32', gold: '#D4AF37', goldHover: '#b5952f' },
+                    fontFamily: { sans: ['Inter', 'sans-serif'], serif: ['Playfair Display', 'serif'] }
+                }
+            }
+        }
+    </script>
     <style>
-        :root { --navy: #172638; --primary: #245A8D; --gold: #D5A52A; --charcoal: #1E1F22; --white: #FFFFFF; --text: #c9d1d9; }
-        * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Inter', sans-serif; background: var(--charcoal); color: var(--text); line-height: 1.6; }
-        h1, h2, h3 { font-family: 'Playfair Display', serif; color: var(--white); }
-
-        nav { background: var(--navy); padding: 15px 50px; display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid var(--gold); position: fixed; width: 100%; top: 0; z-index: 1000; }
-        .logo { font-family: 'Playfair Display', serif; font-size: 1.5rem; color: var(--white); font-weight: bold; letter-spacing: 1px; }
-        .nav-links a { color: var(--white); text-decoration: none; margin-left: 30px; font-weight: 500; transition: 0.2s; }
-        .nav-links a:hover { color: var(--gold); }
-        .login-btn { background: var(--gold); color: var(--navy) !important; padding: 8px 20px; border-radius: 4px; font-weight: bold; }
-
-        .hero { height: 100vh; background: linear-gradient(rgba(23, 38, 56, 0.85), rgba(30, 31, 34, 0.95)), url('https://images.unsplash.com/photo-1541881484888-122716399099?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover; display: flex; align-items: center; padding: 0 50px; }
-        .hero-content { max-width: 800px; }
-        .hero h1 { font-size: 4.5rem; line-height: 1.1; margin-bottom: 20px; }
-        .hero p { font-size: 1.2rem; color: #ddd; margin-bottom: 40px; max-width: 600px; }
-        .cta-btn { display: inline-block; background: var(--primary); color: var(--white); padding: 15px 40px; text-decoration: none; border-radius: 4px; font-weight: bold; font-size: 1.1rem; transition: 0.2s; border: 2px solid var(--primary); }
-        .cta-btn:hover { background: transparent; color: var(--primary); }
-
-        .section { padding: 100px 50px; }
-        .section-dark { background: var(--navy); }
-        .section-title { font-size: 2.5rem; margin-bottom: 20px; color: var(--gold); }
-        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 30px; margin-top: 40px; }
-        .card { background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); padding: 30px; border-radius: 8px; border-top: 4px solid var(--gold); }
-        .card h3 { color: var(--white); margin-bottom: 10px; font-size: 1.3rem; }
-        
-        /* Contact Form */
-        .contact-form { max-width: 600px; background: rgba(255,255,255,0.03); padding: 40px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); }
-        .contact-form input, .contact-form textarea { width: 100%; padding: 15px; margin-bottom: 20px; background: #111; border: 1px solid #444; color: white; border-radius: 4px; font-family: inherit; }
-        .contact-form button { width: 100%; background: var(--gold); color: var(--navy); border: none; padding: 15px; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 1rem; }
-        .contact-form button:hover { background: #b88a1d; }
-
-        footer { background: #111; padding: 40px 50px; text-align: center; border-top: 1px solid #333; }
-        footer p { color: #666; font-size: 0.9rem; }
+        body { background-color: #0B1120; color: #E2E8F0; }
+        .hero-gradient { background: linear-gradient(rgba(11, 17, 32, 0.9), rgba(11, 17, 32, 1)), url('https://images.unsplash.com/photo-1541881484888-122716399099?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=80') center/cover; }
+        .glass-card { background: rgba(21, 30, 50, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(212, 175, 55, 0.2); }
     </style>
 </head>
-<body>
-    <nav>
-        <div class="logo">Lakeview City DOT</div>
-        <div class="nav-links">
-            <a href="#about">About</a>
-            <a href="#divisions">Divisions</a>
-            <a href="#leadership">Leadership</a>
-            <a href="#contact">Contact</a>
-            <a href="/auth/discord" class="login-btn">Employee Login</a>
+<body class="font-sans antialiased">
+    <!-- Navbar -->
+    <nav class="fixed w-full z-50 glass-card border-b border-gold/30">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <div class="flex items-center gap-3">
+                    <img src="https://i.imgur.com/YOUR_LOGO_LINK.png" alt="LCDOT" class="h-12 w-12 rounded-full border border-gold bg-navy p-1 object-cover" onerror="this.src='https://via.placeholder.com/150'">
+                    <span class="font-serif text-2xl font-bold tracking-wider text-white">Lakeview City DOT</span>
+                </div>
+                <div class="hidden md:flex space-x-8">
+                    <a href="#about" class="text-gray-300 hover:text-gold transition">About</a>
+                    <a href="#divisions" class="text-gray-300 hover:text-gold transition">Divisions</a>
+                    <a href="#leadership" class="text-gray-300 hover:text-gold transition">Leadership</a>
+                    <a href="/auth/discord" class="bg-gold text-navy px-6 py-2 rounded font-bold hover:bg-goldHover transition shadow-lg shadow-gold/20">Employee Login</a>
+                </div>
+            </div>
         </div>
     </nav>
 
-    <header class="hero">
-        <div class="hero-content">
-            <h1>Keeping Lakeview Moving.</h1>
-            <p>The official operations portal for the Lakeview City Department of Transportation. We manage traffic control, roadway maintenance, and incident response across the city.</p>
-            <a href="/auth/discord" class="cta-btn">Access Employee Portal</a>
-        </div>
-    </header>
-
-    <section id="about" class="section">
-        <h2 class="section-title">Our Mission</h2>
-        <p style="max-width: 800px; font-size: 1.1rem;">The Lakeview City Department of Transportation is dedicated to providing safe, efficient, and reliable transportation infrastructure for all citizens. Our operators and supervisors work tirelessly to maintain the roads and respond to emergencies.</p>
-    </section>
-
-    <section id="divisions" class="section section-dark">
-        <h2 class="section-title">Our Divisions</h2>
-        <div class="grid">
-            <div class="card">
-                <h3>Field Training (FTO)</h3>
-                <p>Ensuring every new operator meets the highest standards of safety and professionalism before entering the field.</p>
-            </div>
-            <div class="card">
-                <h3>Heavy Operations (HOD)</h3>
-                <p>Our specialized heavy wrecker and recovery team, handling the most complex incidents on the highway.</p>
-            </div>
-            <div class="card">
-                <h3>Construction (COD)</h3>
-                <p>Managing long-term infrastructure projects, lane closures, and specialized construction operations.</p>
-            </div>
-            <div class="card">
-                <h3>Community Coordination (CCD)</h3>
-                <p>Working with the public and other agencies to ensure events and community needs are met safely.</p>
-            </div>
+    <!-- Hero -->
+    <section class="hero-gradient h-screen flex items-center justify-center relative">
+        <div class="text-center px-4 max-w-4xl mx-auto">
+            <h1 class="font-serif text-5xl md:text-7xl font-bold text-white mb-6 leading-tight drop-shadow-2xl">Keeping Lakeview <span class="text-gold">Moving.</span></h1>
+            <p class="text-xl text-gray-400 mb-10 max-w-2xl mx-auto">The official operations portal for the Lakeview City Department of Transportation. Managing infrastructure, incident response, and traffic control.</p>
+            <a href="/auth/discord" class="inline-block bg-gold text-navy font-bold text-lg px-10 py-4 rounded hover:bg-goldHover transition transform hover:-translate-y-1 shadow-xl shadow-gold/30">Access Command Center</a>
         </div>
     </section>
 
-    <section id="leadership" class="section">
-        <h2 class="section-title">Executive Board</h2>
-        <p>Our leadership team is dedicated to the continuous improvement of the department.</p>
-        <div class="grid">
-            <div class="card" style="text-align: center;">
-                <div style="width: 100px; height: 100px; background: #333; border-radius: 50%; margin: 0 auto 15px;"></div>
-                <h3>Director</h3>
-                <p style="color: var(--gold);">Name Here</p>
-            </div>
-            <div class="card" style="text-align: center;">
-                <div style="width: 100px; height: 100px; background: #333; border-radius: 50%; margin: 0 auto 15px;"></div>
-                <h3>Deputy Director</h3>
-                <p style="color: var(--gold);">Name Here</p>
-            </div>
-            <div class="card" style="text-align: center;">
-                <div style="width: 100px; height: 100px; background: #333; border-radius: 50%; margin: 0 auto 15px;"></div>
-                <h3>Chief of Operations</h3>
-                <p style="color: var(--gold);">Name Here</p>
+    <!-- Divisions -->
+    <section id="divisions" class="py-24 bg-navy">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="font-serif text-4xl text-center mb-16 text-gold">Our Divisions</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
+                    <h3 class="text-xl font-bold text-white mb-3">Heavy Operations (HOD)</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Specialized heavy wrecker and recovery team handling complex incidents on the highway.</p>
+                </div>
+                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
+                    <h3 class="text-xl font-bold text-white mb-3">Construction (COD)</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Managing long-term infrastructure projects, lane closures, and specialized construction operations.</p>
+                </div>
+                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
+                    <h3 class="text-xl font-bold text-white mb-3">Community (CCD)</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Working with the public and other agencies to ensure events and community needs are met safely.</p>
+                </div>
+                <div class="glass-card p-8 rounded-xl hover:-translate-y-2 transition duration-300">
+                    <h3 class="text-xl font-bold text-white mb-3">Field Training (FTO)</h3>
+                    <p class="text-gray-400 text-sm leading-relaxed">Ensuring every new operator meets the highest standards of safety and professionalism.</p>
+                </div>
             </div>
         </div>
     </section>
 
-    <section id="contact" class="section section-dark">
-        <h2 class="section-title">Contact Us</h2>
-        <div class="contact-form">
-            <form id="contactForm">
-                <input type="text" id="c-name" placeholder="Your Name (Roblox Username)" required>
-                <input type="email" id="c-email" placeholder="Your Email or Discord Tag" required>
-                <textarea id="c-msg" rows="5" placeholder="Your message..." required></textarea>
-                <button type="submit">Send Message</button>
-            </form>
-            <p id="c-success" style="display:none; color:var(--gold); margin-top:15px; font-weight:bold;">✅ Message sent to department leadership!</p>
-        </div>
-    </section>
-
-    <footer>
+    <footer class="bg-navyLight py-8 border-t border-gray-800 text-center text-gray-500 text-sm">
         <p>&copy; 2026 Lakeview City Department of Transportation. Site created by hypol17.</p>
     </footer>
-
-    <script>
-        document.getElementById('contactForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const name = document.getElementById('c-name').value;
-            const email = document.getElementById('c-email').value;
-            const message = document.getElementById('c-msg').value;
-
-            const res = await fetch('/api/contact', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ name, email, message })
-            });
-
-            if (res.ok) {
-                document.getElementById('c-success').style.display = 'block';
-                document.getElementById('contactForm').reset();
-                setTimeout(() => document.getElementById('c-success').style.display = 'none', 4000);
-            }
-        });
-    </script>
 </body>
 </html>
