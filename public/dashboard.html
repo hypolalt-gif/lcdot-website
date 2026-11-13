@@ -235,15 +235,25 @@
                 </div>
             </div>
 
-            <!-- FLEET MANAGEMENT -->
+            <!-- FLEET MANAGEMENT (ER:LC SPECIFIC) -->
             <div id="tab-fleet" class="tab-content">
                 <h2 class="page-title">Fleet Management</h2>
                 
                 <div class="card" id="add-vehicle-card" style="display: none;">
-                    <h3>Add Vehicle</h3>
-                    <div style="display: flex; gap: 1rem;">
-                        <input type="text" id="fleet-unit" placeholder="Unit (e.g., DOT-01)" style="flex: 1;">
-                        <input type="text" id="fleet-type" placeholder="Vehicle Type (e.g., Ford F-250)" style="flex: 2;">
+                    <h3>Add Vehicle to Fleet</h3>
+                    <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+                        <input type="text" id="fleet-unit" placeholder="Unit (e.g., DOT-01, TOW-05)" style="flex: 1; min-width: 200px;">
+                        
+                        <!-- ER:LC DOT VEHICLES -->
+                        <select id="fleet-type" style="flex: 2; min-width: 250px;">
+                            <option value="Ford F-250 (Utility)">Ford F-250 (DOT Utility)</option>
+                            <option value="DOT Tow Truck">DOT Tow Truck</option>
+                            <option value="Heavy Wrecker (HOD)">Heavy Wrecker (HOD)</option>
+                            <option value="Cone Truck (COD)">Cone Truck (COD)</option>
+                            <option value="Arrow Board Truck">Arrow Board Truck</option>
+                            <option value="DOT Utility Van">DOT Utility Van</option>
+                            <option value="Flatbed Truck">Flatbed Truck</option>
+                        </select>
                     </div>
                     <button onclick="addVehicle()" class="btn btn-gold" style="width: 100%;">Add to Fleet</button>
                 </div>
@@ -518,10 +528,9 @@
         async function addVehicle() {
             const unit = document.getElementById('fleet-unit').value;
             const vehicleType = document.getElementById('fleet-type').value;
-            if (!unit || !vehicleType) return alert("Fill out all fields.");
+            if (!unit) return alert("Enter a unit ID.");
             await fetch('/api/fleet', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ unit, vehicleType, status: 'Available' }) });
             document.getElementById('fleet-unit').value = '';
-            document.getElementById('fleet-type').value = '';
             loadFleet();
         }
 

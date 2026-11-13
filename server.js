@@ -67,6 +67,7 @@ bot.on('guildMemberUpdate', async (oldMember, newMember) => {
 
 // Slash Commands & Buttons
 bot.on('interactionCreate', async interaction => {
+    // --- LOA BUTTONS (DISCORD) ---
     if (interaction.isButton()) {
         if (interaction.customId.startsWith('approve_loa_')) {
             const targetId = interaction.customId.split('_')[2];
@@ -75,11 +76,27 @@ bot.on('interactionCreate', async interaction => {
                 await member.roles.add(process.env.ROLE_LOA);
                 await member.setNickname(`LOA (${member.user.username})`);
                 await db.collection('users').updateOne({ id: targetId }, { $set: { status: 'LOA' } });
+                
+                // DM User
+                try {
+                    const targetUser = await bot.users.fetch(targetId);
+                    await targetUser.send({ embeds: [new EmbedBuilder().setTitle("✅ LOA Approved").setDescription("Your Leave of Absence request has been **approved** by Management. You have been given the LOA role and your nickname updated.").setColor('#16A34A').setThumbnail(LOGO_URL)] });
+                } catch (e) { console.log("Could not DM user."); }
+
                 const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0]).setColor('#16A34A').setFooter({ text: `Approved by ${interaction.user.username}` });
                 await interaction.update({ embeds: [updatedEmbed], components: [] });
             } catch (err) { interaction.reply({ content: 'Error approving LOA. Check role hierarchy.', ephemeral: true }); }
         }
+        
         if (interaction.customId.startsWith('deny_loa_')) {
+            const targetId = interaction.customId.split('_')[2];
+            
+            // DM User
+            try {
+                const targetUser = await bot.users.fetch(targetId);
+                await targetUser.send({ embeds: [new EmbedBuilder().setTitle("❌ LOA Denied").setDescription("Your Leave of Absence request has been **denied** by Management. Please contact your supervisor for more information.").setColor('#DC2626').setThumbnail(LOGO_URL)] });
+            } catch (e) { console.log("Could not DM user."); }
+
             const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0]).setColor('#DC2626').setFooter({ text: `Denied by ${interaction.user.username}` });
             await interaction.update({ embeds: [updatedEmbed], components: [] });
         }
@@ -389,7 +406,20 @@ async function startServer() {
 
         app.post('/api/loa/review', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
-            await db.collection('loa_requests').updateOne({ _id: new ObjectId(req.body.loaId) }, { $set: { status: req.body.status, reviewed_by: req.session.user.username } });
+            const { loaId, status } = req.body;
+            const loa = await db.collection('loa_requests').findOne({ _id: new ObjectId(loaId) });
+            
+            await db.collection('loa_requests').updateOne({ _id: new ObjectId(loaId) }, { $set: { status, reviewed_by: req.session.user.username } });
+            
+            // DM the user
+            try {
+                const targetUser = await bot.users.fetch(loa.user_id);
+                const color = status === 'Approved' ? '#16A34A' : '#DC2626';
+                const title = status === 'Approved' ? "✅ LOA Approved" : "❌ LOA Denied";
+                const desc = status === 'Approved' ? "Your Leave of Absence request has been **approved**." : "Your Leave of Absence request has been **denied**.";
+                await targetUser.send({ embeds: [new EmbedBuilder().setTitle(title).setDescription(desc).setColor(color).setThumbnail(LOGO_URL)] });
+            } catch (e) { console.log("Could not DM user."); }
+
             res.json({ success: true });
         });
 
