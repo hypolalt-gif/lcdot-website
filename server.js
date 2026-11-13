@@ -90,10 +90,8 @@ bot.on('interactionCreate', async interaction => {
     const { commandName, user } = interaction;
     const member = await interaction.guild.members.fetch(user.id);
 
-    if (commandName === 'ping') {
-        return interaction.reply({ content: `🏓 Pong! Latency: ${bot.ws.ping}ms`, ephemeral: true });
-    }
-
+    if (commandName === 'ping') return interaction.reply({ content: `🏓 Pong! Latency: ${bot.ws.ping}ms`, ephemeral: true });
+    
     if (commandName === 'help') {
         const embed = new EmbedBuilder().setTitle("📚 LCDOT Command Directory").setColor(COLOR_GOLD).setThumbnail(LOGO_URL)
             .addFields(
@@ -156,7 +154,7 @@ bot.on('interactionCreate', async interaction => {
         await db.collection('activity_logs').insertOne({
             user_id: user.id, username: user.username, category, description, status: 'Pending', created_at: new Date()
         });
-        interaction.reply({ content: "✅ Log submitted successfully and sent to Supervisors for review.", ephemeral: true });
+        interaction.reply({ content: "✅ Log submitted successfully.", ephemeral: true });
     }
 
     if (commandName === 'on-duty') {
@@ -176,7 +174,7 @@ bot.on('interactionCreate', async interaction => {
     if (commandName === 'leaderboard') {
         const topUsers = await db.collection('users').find().sort({ weekly_minutes: -1 }).limit(10).toArray();
         const embed = new EmbedBuilder().setTitle("🏆 Weekly Leaderboard").setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
-        embed.setDescription(topUsers.map((u, i) => `**${i + 1}.** ${u.username} - ${((u.weekly_minutes || 0) / 60).toFixed(1)} hrs`).join('\n') || "No shifts logged this week.");
+        embed.setDescription(topUsers.map((u, i) => `**${i + 1}.** ${u.username} - ${((u.weekly_minutes || 0) / 60).toFixed(1)} hrs`).join('\n') || "No shifts logged.");
         interaction.reply({ embeds: [embed] });
     }
 
@@ -259,7 +257,7 @@ async function startServer() {
             cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 30, rolling: true } 
         }));
 
-        // --- AUTHENTICATION ROUTES ---
+        // --- AUTHENTICATION ---
         app.get('/auth/discord', (req, res) => {
             const scope = 'identify guilds.members.read';
             const redirectUri = encodeURIComponent(process.env.REDIRECT_URI || 'http://localhost:3000/auth/discord/callback');
@@ -300,7 +298,6 @@ async function startServer() {
                 const avatarUrl = userResponse.data.avatar ? `https://cdn.discordapp.com/avatars/${userResponse.data.id}/${userResponse.data.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/0.png`;
                 
                 await db.collection('users').updateOne({ id: userResponse.data.id }, { $set: { username: userResponse.data.username, rank, rank_level: rankLevel, avatar_url: avatarUrl, status: 'Active' }, $setOnInsert: { total_minutes: 0, weekly_minutes: 0 } }, { upsert: true });
-
                 req.session.user = { id: userResponse.data.id, username: userResponse.data.username, rank, rankLevel, graderType, avatar_url: avatarUrl };
                 res.redirect('/dashboard');
             } catch (error) { res.redirect('/'); }
@@ -310,7 +307,7 @@ async function startServer() {
         app.get('/api/me', (req, res) => { if (!req.session.user) return res.status(401).json({ error: 'Not logged in' }); res.json(req.session.user); });
         app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
 
-        // --- DASHBOARD APIS ---
+        // --- DASHBOARD DATA ---
         app.get('/api/my-stats', async (req, res) => {
             const stats = await db.collection('users').findOne({ id: req.session.user.id });
             const active = await db.collection('shifts').findOne({ user_id: req.session.user.id, status: 'active' });
@@ -360,23 +357,61 @@ async function startServer() {
         app.post('/api/activity-logs', async (req, res) => {
             if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
             const { category, description } = req.body;
-            await db.collection('activity_logs').insertOne({
-                user_id: req.session.user.id, username: req.session.user.username, category, description, status: 'Pending', created_at: new Date()
-            });
+            await db.collection('activity_logs').insertOne({ user_id: req.session.user.id, username: req.session.user.username, category, description, status: 'Pending', created_at: new Date() });
             res.json({ success: true });
         });
 
         app.post('/api/activity-logs/review', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 5) return res.status(403).json({ error: 'Supervisor+ Only' });
             const { logId, status, reviewNotes } = req.body;
-            await db.collection('activity_logs').updateOne(
-                { _id: new ObjectId(logId) }, 
-                { $set: { status, reviewer_id: req.session.user.id, review_notes: reviewNotes, reviewed_at: new Date() } }
-            );
+            await db.collection('activity_logs').updateOne({ _id: new ObjectId(logId) }, { $set: { status, reviewer_id: req.session.user.id, review_notes: reviewNotes, reviewed_at: new Date() } });
             res.json({ success: true });
         });
 
-        // --- MANAGEMENT APIS ---
+        // --- LOA ---
+        app.get('/api/loa', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            let query = req.session.user.rankLevel < 7 ? { user_id: req.session.user.id } : {};
+            res.json(await db.collection('loa_requests').find(query).sort({ created_at: -1 }).toArray());
+        });
+
+        app.post('/api/loa', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            const { reason, startDate, endDate } = req.body;
+            await db.collection('loa_requests').insertOne({ user_id: req.session.user.id, username: req.session.user.username, reason, startDate, endDate, status: 'Pending', created_at: new Date() });
+            try {
+                const embed = new EmbedBuilder().setTitle("📝 Website LOA Request").setDescription(`**User:** ${req.session.user.username} (${req.session.user.id})\n**Dates:** ${startDate} to ${endDate}\n**Reason:** ${reason}`).setColor(COLOR_GOLD).setTimestamp();
+                const channel = await bot.channels.fetch(process.env.CHANNEL_LOA);
+                if (channel) await channel.send({ embeds: [embed] });
+            } catch (err) { console.error(err); }
+            res.json({ success: true });
+        });
+
+        app.post('/api/loa/review', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
+            await db.collection('loa_requests').updateOne({ _id: new ObjectId(req.body.loaId) }, { $set: { status: req.body.status, reviewed_by: req.session.user.username } });
+            res.json({ success: true });
+        });
+
+        // --- FLEET ---
+        app.get('/api/fleet', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            res.json(await db.collection('fleet').find().sort({ unit: 1 }).toArray());
+        });
+
+        app.post('/api/fleet', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
+            await db.collection('fleet').insertOne({ unit: req.body.unit, vehicleType: req.body.vehicleType, status: req.body.status || 'Available', created_at: new Date() });
+            res.json({ success: true });
+        });
+
+        app.post('/api/fleet/status', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 5) return res.status(403).json({ error: 'Supervisor+ Only' });
+            await db.collection('fleet').updateOne({ _id: new ObjectId(req.body.id) }, { $set: { status: req.body.status } });
+            res.json({ success: true });
+        });
+
+        // --- MANAGEMENT ---
         app.post('/api/certify', async (req, res) => {
             if (!req.session.user || !req.session.user.graderType) return res.status(403).json({ error: 'Access Denied.' });
             const { targetId, passed, notes } = req.body;
@@ -389,7 +424,6 @@ async function startServer() {
                     if (grader === 'HOD') { await member.roles.add(process.env.PASSED_HOD_1); await member.roles.add(process.env.PASSED_HOD_2); }
                     if (grader === 'COD') { await member.roles.add(process.env.PASSED_COD_1); await member.roles.add(process.env.PASSED_COD_2); }
                     if (grader === 'CCD') { await member.roles.add(process.env.PASSED_CCD_1); await member.roles.add(process.env.PASSED_CCD_2); }
-                    
                     const dmEmbed = new EmbedBuilder().setAuthor({ name: 'Department Of Transportation', iconURL: LOGO_URL }).setTitle(`DOT Application Approval: ${grader} Division`).setDescription(`Congratulations, <@${targetId}>,\n\n> Your **${grader}** application has been reviewed by our team. After careful evaluation, your application has been **approved**.`).addFields({ name: 'Additional Information:', value: `**Applicant:** ${member.user.username} | ${targetId}\n**Result:** Passed\n**Time of Review:** <t:${Math.floor(Date.now() / 1000)}:R>` }).setColor(COLOR_GOLD).setThumbnail(LOGO_URL);
                     member.send({ embeds: [dmEmbed] }).catch(() => {});
                 } else {
@@ -433,16 +467,13 @@ async function startServer() {
             res.json(await db.collection('audit_logs').find().sort({ created_at: -1 }).limit(100).toArray());
         });
 
-        // --- PUBLIC APIS ---
+        // --- PUBLIC ---
         app.get('/api/public-announcements', async (req, res) => {
             try {
                 const channel = await bot.channels.fetch('1478142273169526864');
                 if (!channel) return res.json([]);
                 const messages = await channel.messages.fetch({ limit: 3 });
-                res.json(messages.map(m => ({
-                    id: m.id, title: m.embeds.length > 0 && m.embeds[0].title ? m.embeds[0].title : 'Department Update',
-                    content: m.embeds.length > 0 ? m.embeds[0].description : m.content, date: m.createdAt
-                })));
+                res.json(messages.map(m => ({ id: m.id, title: m.embeds.length > 0 && m.embeds[0].title ? m.embeds[0].title : 'Department Update', content: m.embeds.length > 0 ? m.embeds[0].description : m.content, date: m.createdAt })));
             } catch (err) { res.json([]); }
         });
 
@@ -453,7 +484,6 @@ async function startServer() {
 
         app.get('/api/executives', async (req, res) => res.json(await db.collection('executives').find().toArray()));
 
-        // --- INTERNAL DOCS & EXECS ---
         app.get('/api/docs/:type', async (req, res) => {
             const doc = await db.collection('docs').findOne({ type: req.params.type });
             res.json({ content: doc ? doc.content : 'No content added yet.' });
@@ -477,7 +507,6 @@ async function startServer() {
             res.json({ success: true });
         });
 
-        // --- OPERATIONS ---
         app.get('/api/workorders', async (req, res) => res.json(await db.collection('work_orders').find().sort({ created_at: -1 }).toArray()));
         app.post('/api/workorders', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 5) return res.status(403).json({ error: 'Supervisor+ Only' });
@@ -510,7 +539,6 @@ async function startServer() {
             res.json({ success: true });
         });
 
-        // --- ANNOUNCEMENTS & RESOURCES ---
         app.get('/api/announcements', async (req, res) => res.json(await db.collection('announcements').find().sort({ created_at: -1 }).toArray()));
         app.post('/api/announcements', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });

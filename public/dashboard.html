@@ -186,6 +186,102 @@
                 </div>
             </div>
 
+            <!-- TRAINING CENTER -->
+            <div id="tab-training" class="tab-content">
+                <h2 class="page-title">Training Center</h2>
+                <div class="card">
+                    <h3>Available Courses & Examinations</h3>
+                    <p style="color: var(--text-muted); margin-bottom: 1rem;">Complete required certifications and examinations to unlock division access and promotions.</p>
+                    <table>
+                        <thead><tr><th>Course Name</th><th>Required For</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Basic Traffic Control</strong></td>
+                                <td>All Operators</td>
+                                <td><span class="status-badge status-active">Completed</span></td>
+                                <td><button class="btn btn-gold" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;" disabled>Passed</button></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Heavy Operations (HOD) Exam</strong></td>
+                                <td>HOD Applicants</td>
+                                <td><span class="status-badge status-pending">Locked</span></td>
+                                <td><button class="btn btn-gold" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Take Exam</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- LOA SYSTEM -->
+            <div id="tab-loa" class="tab-content">
+                <h2 class="page-title">Leave of Absence</h2>
+                
+                <div class="card">
+                    <h3>Request New LOA</h3>
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <input type="date" id="loa-start" style="flex: 1;">
+                        <input type="date" id="loa-end" style="flex: 1;">
+                    </div>
+                    <textarea id="loa-reason" placeholder="Reason for leave..." rows="3"></textarea>
+                    <button onclick="submitLOA()" class="btn btn-gold" style="width: 100%;">Submit Request</button>
+                </div>
+
+                <div class="card">
+                    <h3>LOA History & Requests</h3>
+                    <table>
+                        <thead><tr><th>User</th><th>Dates</th><th>Reason</th><th>Status</th><th id="loa-action-head" style="display:none;">Action</th></tr></thead>
+                        <tbody id="loa-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- FLEET MANAGEMENT -->
+            <div id="tab-fleet" class="tab-content">
+                <h2 class="page-title">Fleet Management</h2>
+                
+                <div class="card" id="add-vehicle-card" style="display: none;">
+                    <h3>Add Vehicle</h3>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="text" id="fleet-unit" placeholder="Unit (e.g., DOT-01)" style="flex: 1;">
+                        <input type="text" id="fleet-type" placeholder="Vehicle Type (e.g., Ford F-250)" style="flex: 2;">
+                    </div>
+                    <button onclick="addVehicle()" class="btn btn-gold" style="width: 100%;">Add to Fleet</button>
+                </div>
+
+                <div class="card">
+                    <h3>Active Fleet Registry</h3>
+                    <table>
+                        <thead><tr><th>Unit</th><th>Vehicle Type</th><th>Status</th><th>Action</th></tr></thead>
+                        <tbody id="fleet-body"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- ANNOUNCEMENTS -->
+            <div id="tab-announcements" class="tab-content">
+                <h2 class="page-title">Department Announcements</h2>
+                <div class="card" id="create-ann-card" style="display: none;">
+                    <h3>Post New Announcement</h3>
+                    <input type="text" id="ann-title" placeholder="Announcement Title">
+                    <textarea id="ann-content" placeholder="Message..." rows="4"></textarea>
+                    <button onclick="postAnnouncement()" class="btn btn-gold" style="width: 100%;">Publish to Web & Discord</button>
+                </div>
+                <div id="announcement-list"></div>
+            </div>
+
+            <!-- DOCUMENTS -->
+            <div id="tab-documents" class="tab-content">
+                <h2 class="page-title">Document Center</h2>
+                <div class="card">
+                    <h3>Department Handbook</h3>
+                    <div id="doc-handbook-content" class="doc-text">Loading...</div>
+                </div>
+                <div class="card">
+                    <h3>Department Policies</h3>
+                    <div id="doc-policies-content" class="doc-text">Loading...</div>
+                </div>
+            </div>
+
             <!-- MANAGEMENT HQ -->
             <div id="tab-management" class="tab-content">
                 <h2 class="page-title">Management Headquarters</h2>
@@ -215,6 +311,27 @@
                         <button onclick="adminAction('Reinstate')" class="btn btn-gold" style="flex:1;">Reinstate</button>
                     </div>
                 </div>
+
+                <div class="card">
+                    <h3>Edit Website Documents</h3>
+                    <select id="doc-type" style="margin-bottom: 1rem;">
+                        <option value="handbook">Handbook</option><option value="policies">Policies</option>
+                    </select>
+                    <textarea id="doc-content" rows="10" placeholder="Type here..."></textarea>
+                    <button onclick="saveDoc()" class="btn btn-gold" style="width: 100%;">Save Document</button>
+                </div>
+
+                <div class="card">
+                    <h3>Manage Executive Board</h3>
+                    <input type="text" id="exec-name" placeholder="Name">
+                    <input type="text" id="exec-rank" placeholder="Rank">
+                    <input type="text" id="exec-img" placeholder="Image URL">
+                    <button onclick="addExecutive()" class="btn btn-gold" style="width: 100%; margin-bottom: 2rem;">Add Executive</button>
+                    <table>
+                        <thead><tr><th>Name</th><th>Rank</th><th>Action</th></tr></thead>
+                        <tbody id="admin-exec-body"></tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
@@ -232,6 +349,10 @@
 
             if (tabId === 'activity') loadActivityLogs();
             if (tabId === 'management') loadPendingLogs();
+            if (tabId === 'loa') loadLOA();
+            if (tabId === 'fleet') loadFleet();
+            if (tabId === 'documents') { loadDoc('handbook'); loadDoc('policies'); }
+            if (tabId === 'management') loadAdminExecs();
         }
 
         async function init() {
@@ -313,11 +434,7 @@
             const category = document.getElementById('log-category').value;
             const description = document.getElementById('log-desc').value;
             if (!description) return alert("Enter a description.");
-            
-            await fetch('/api/activity-logs', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ category, description })
-            });
+            await fetch('/api/activity-logs', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ category, description }) });
             document.getElementById('log-desc').value = '';
             loadActivityLogs();
         }
@@ -338,10 +455,7 @@
 
         async function reviewLog(logId, status) {
             const notes = prompt("Enter review notes (optional):");
-            await fetch('/api/activity-logs/review', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ logId, status, reviewNotes: notes })
-            });
+            await fetch('/api/activity-logs/review', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ logId, status, reviewNotes: notes }) });
             loadActivityLogs();
         }
 
@@ -362,16 +476,134 @@
             `).join('') || '<tr><td colspan="4" style="text-align:center;">No pending logs.</td></tr>';
         }
 
+        // --- LOA LOGIC ---
+        async function submitLOA() {
+            const reason = document.getElementById('loa-reason').value;
+            const startDate = document.getElementById('loa-start').value;
+            const endDate = document.getElementById('loa-end').value;
+            if (!reason || !startDate || !endDate) return alert("Fill out all fields.");
+            await fetch('/api/loa', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ reason, startDate, endDate }) });
+            document.getElementById('loa-reason').value = '';
+            loadLOA();
+        }
+
+        async function loadLOA() {
+            const res = await fetch('/api/loa');
+            const loas = await res.json();
+            if (user.rankLevel >= 7) document.getElementById('loa-action-head').style.display = 'table-cell';
+
+            document.getElementById('loa-body').innerHTML = loas.map(l => `
+                <tr>
+                    <td><strong>${l.username}</strong></td>
+                    <td>${l.startDate} to ${l.endDate}</td>
+                    <td>${l.reason}</td>
+                    <td><span class="status-badge ${l.status === 'Approved' ? 'status-active' : l.status === 'Denied' ? 'status-suspended' : 'status-pending'}">${l.status}</span></td>
+                    ${user.rankLevel >= 7 ? `
+                    <td>
+                        ${l.status === 'Pending' ? `
+                            <button onclick="reviewLOA('${l._id}', 'Approved')" class="btn btn-green" style="padding:0.2rem 0.5rem; font-size:0.75rem;">Approve</button>
+                            <button onclick="reviewLOA('${l._id}', 'Denied')" class="btn btn-red" style="padding:0.2rem 0.5rem; font-size:0.75rem;">Deny</button>
+                        ` : ''}
+                    </td>` : ''}
+                </tr>
+            `).join('') || '<tr><td colspan="5" style="text-align:center;">No LOA records.</td></tr>';
+        }
+
+        async function reviewLOA(id, status) {
+            await fetch('/api/loa/review', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ loaId: id, status }) });
+            loadLOA();
+        }
+
+        // --- FLEET LOGIC ---
+        async function addVehicle() {
+            const unit = document.getElementById('fleet-unit').value;
+            const vehicleType = document.getElementById('fleet-type').value;
+            if (!unit || !vehicleType) return alert("Fill out all fields.");
+            await fetch('/api/fleet', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ unit, vehicleType, status: 'Available' }) });
+            document.getElementById('fleet-unit').value = '';
+            document.getElementById('fleet-type').value = '';
+            loadFleet();
+        }
+
+        async function loadFleet() {
+            const res = await fetch('/api/fleet');
+            const vehicles = await res.json();
+            if (user.rankLevel >= 7) document.getElementById('add-vehicle-card').style.display = 'block';
+
+            document.getElementById('fleet-body').innerHTML = vehicles.map(v => `
+                <tr>
+                    <td style="font-weight:600;">${v.unit}</td>
+                    <td>${v.vehicleType}</td>
+                    <td><span class="status-badge ${v.status === 'Available' ? 'status-active' : 'status-suspended'}">${v.status}</span></td>
+                    <td>
+                        ${user.rankLevel >= 5 ? `
+                            <select onchange="updateVehicleStatus('${v._id}', this.value)" style="padding: 0.2rem; margin:0; width: auto;">
+                                <option value="Available" ${v.status === 'Available' ? 'selected' : ''}>Available</option>
+                                <option value="Maintenance" ${v.status === 'Maintenance' ? 'selected' : ''}>Maintenance</option>
+                                <option value="Out of Service" ${v.status === 'Out of Service' ? 'selected' : ''}>Out of Service</option>
+                            </select>
+                        ` : v.status}
+                    </td>
+                </tr>
+            `).join('') || '<tr><td colspan="4" style="text-align:center;">No vehicles in fleet.</td></tr>';
+        }
+
+        async function updateVehicleStatus(id, status) {
+            await fetch('/api/fleet/status', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ id, status }) });
+            loadFleet();
+        }
+
+        // --- ADMIN / DOCS / EXECS ---
         async function adminAction(action) {
             const targetId = document.getElementById('admin-target-id').value;
             const value = action === 'Promote' ? document.getElementById('promote-rank').value : '';
             if (!targetId) return alert("Enter a Discord ID.");
-            
-            const res = await fetch('/api/admin/action', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ targetId, action, value })
-            });
+            const res = await fetch('/api/admin/action', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ targetId, action, value }) });
             if (res.ok) alert(`${action} successful!`);
+        }
+
+        async function loadDoc(type) {
+            const res = await fetch(`/api/docs/${type}`);
+            const data = await res.json();
+            document.getElementById(`doc-${type}-content`).innerText = data.content;
+            if (user.rankLevel >= 7) { document.getElementById('doc-content').value = data.content; document.getElementById('doc-type').value = type; }
+        }
+
+        async function saveDoc() {
+            const type = document.getElementById('doc-type').value;
+            const content = document.getElementById('doc-content').value;
+            const res = await fetch(`/api/docs/${type}`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ content }) });
+            if (res.ok) alert('Document saved successfully!');
+        }
+
+        async function loadAdminExecs() {
+            if (user.rankLevel < 7) return;
+            const res = await fetch('/api/executives');
+            const execs = await res.json();
+            document.getElementById('admin-exec-body').innerHTML = execs.map(e => `
+                <tr>
+                    <td>${e.name}</td>
+                    <td>${e.rank}</td>
+                    <td><button onclick="deleteExec('${e._id}')" class="btn btn-red" style="padding: 0.2rem 0.5rem; font-size: 0.75rem;">Remove</button></td>
+                </tr>
+            `).join('') || '<tr><td colspan="3" style="text-align:center;">No executives added.</td></tr>';
+        }
+
+        async function addExecutive() {
+            const name = document.getElementById('exec-name').value;
+            const rank = document.getElementById('exec-rank').value;
+            const imageUrl = document.getElementById('exec-img').value;
+            if (!name || !rank || !imageUrl) return alert("Fill all fields.");
+            await fetch('/api/executives', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ name, rank, imageUrl }) });
+            document.getElementById('exec-name').value = '';
+            document.getElementById('exec-rank').value = '';
+            document.getElementById('exec-img').value = '';
+            loadAdminExecs();
+        }
+
+        async function deleteExec(id) {
+            await fetch(`/api/executives/${id}`, { method: 'DELETE' });
+            loadAdminExecs();
         }
 
         init();
