@@ -3,142 +3,136 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lakeview DOT | Portal</title>
+    <title>LCDOT | Employee Portal</title>
     <link href="https://fonts.googleapis.com/css2?family=Merriweather:wght@700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg: #0f1115; --panel: #16181d; --text: #e2e8f0; --text-muted: #94a3b8;
-            --gold: #d4af37; --border: #2d3139; --danger: #ef4444; --success: #22c55e;
+            --bg: #0a0a0a;
+            --panel: #121212;
+            --sidebar: #161616;
+            --text: #f4f4f5;
+            --text-muted: #a1a1aa;
+            --gold: #d4af37;
+            --border: #27272a;
+            --danger: #ef4444;
+            --success: #22c55e;
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-        .sidebar { width: 260px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
-        .brand { padding: 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
-        .brand h1 { font-family: 'Merriweather', serif; font-size: 1.1rem; color: white; }
+        /* Sidebar Navigation */
+        .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .brand { padding: 1.5rem; border-bottom: 1px solid var(--border); text-align: center; }
+        .brand h1 { font-family: 'Merriweather', serif; font-size: 1.1rem; color: var(--gold); }
         .nav { padding: 1rem 0; flex: 1; overflow-y: auto; }
-        .nav-btn { display: block; width: 100%; text-align: left; padding: 0.8rem 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 0.9rem; cursor: pointer; border-left: 2px solid transparent; }
-        .nav-btn:hover { color: white; background: rgba(255,255,255,0.02); }
-        .nav-btn.active { color: var(--gold); border-left-color: var(--gold); background: rgba(212, 175, 55, 0.05); }
-        .logout { padding: 1rem; border-top: 1px solid var(--border); }
-        .logout a { display: block; text-align: center; color: var(--danger); text-decoration: none; font-size: 0.85rem; padding: 0.5rem; border: 1px solid var(--danger); }
+        .nav-item { display: block; width: 100%; text-align: left; padding: 0.8rem 1.5rem; background: none; border: none; color: var(--text-muted); font-size: 0.9rem; font-weight: 500; cursor: pointer; transition: 0.2s; }
+        .nav-item:hover { color: white; background: rgba(255,255,255,0.02); }
+        .nav-item.active { color: var(--gold); border-left: 3px solid var(--gold); background: rgba(212, 175, 55, 0.05); }
+        .logout-area { padding: 1rem; border-top: 1px solid var(--border); }
+        .logout-btn { display: block; text-align: center; background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 0.6rem; text-decoration: none; font-size: 0.85rem; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 600; }
 
+        /* Main Content */
         .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
-        .topbar { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--panel); }
-        .user { display: flex; gap: 1rem; align-items: center; }
-        .user img { width: 40px; height: 40px; border-radius: 2px; }
-        .user h2 { font-size: 1rem; }
-        .user p { font-size: 0.8rem; color: var(--gold); font-weight: 600; }
+        .header { padding: 1rem 2rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--panel); }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .user-info img { width: 40px; height: 40px; border-radius: 4px; border: 1px solid var(--border); }
+        .user-info h2 { font-size: 1rem; color: white; }
+        .user-info p { font-size: 0.8rem; color: var(--gold); font-weight: 600; }
         
-        .content { padding: 2rem; max-width: 1000px; margin: 0 auto; width: 100%; }
-        .tab { display: none; }
-        .tab.active { display: block; }
-        .page-title { font-family: 'Merriweather', serif; font-size: 1.5rem; color: var(--gold); margin-bottom: 1.5rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .content-area { padding: 2rem; max-width: 1200px; margin: 0 auto; width: 100%; }
+        .page { display: none; animation: fadeIn 0.2s ease-in-out; }
+        .page.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         
+        .page-title { font-family: 'Merriweather', serif; font-size: 1.4rem; color: var(--gold); margin-bottom: 1.5rem; padding-bottom: 0.5rem; border-bottom: 1px solid var(--border); }
+
+        /* Panels & Tables */
         .panel { background: var(--panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 1.5rem; }
-        .panel-header { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 1px; color: var(--text-muted); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.75rem; }
+        .panel-title { font-size: 0.85rem; font-weight: 600; text-transform: uppercase; color: var(--text-muted); margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
         
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 500; }
         td { padding: 0.75rem; border-bottom: 1px solid var(--border); }
-        
-        input, select, textarea { width: 100%; padding: 0.75rem; background: var(--bg); border: 1px solid var(--border); color: white; margin-bottom: 1rem; font-family: inherit; }
-        .btn { background: var(--gold); color: #000; border: none; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; font-family: inherit; }
-        .btn-red { background: var(--danger); color: white; }
-        
-        .timer { font-size: 3rem; font-family: monospace; text-align: center; margin: 2rem 0; color: white; }
+        tr:hover { background: rgba(255,255,255,0.01); }
     </style>
 </head>
 <body>
 
+    <!-- SIDEBAR (Matches Spec Section 5.1) -->
     <aside class="sidebar">
-        <div class="brand">
-            <img src="https://cdn.discordapp.com/attachments/1533196538048942110/1570179443874336818/lkdot.png" width="24">
-            <h1>LCDOT Portal</h1>
-        </div>
+        <div class="brand"><h1>LCDOT Portal</h1></div>
         <div class="nav">
-            <button onclick="switchTab('dashboard', this)" class="nav-btn active">Overview</button>
-            <button onclick="switchTab('profile', this)" class="nav-btn">My Profile</button>
-            <button onclick="switchTab('documents', this)" class="nav-btn">Handbook & Policies</button>
-            <button onclick="switchTab('management', this)" id="nav-mgmt" class="nav-btn" style="display:none;">Management HQ</button>
+            <button onclick="switchPage('dashboard', this)" class="nav-item active">Dashboard</button>
+            <button onclick="switchPage('profile', this)" class="nav-item">My Profile</button>
+            <button onclick="switchPage('directory', this)" class="nav-item">Employee Directory</button>
+            <button onclick="switchPage('shifts', this)" class="nav-item">Shift Center</button>
+            <button onclick="switchPage('logs', this)" class="nav-item">Activity Logs</button>
+            <button onclick="switchPage('loa', this)" class="nav-item">LOA Requests</button>
+            <button onclick="switchPage('documents', this)" class="nav-item">Document Center</button>
+            <button onclick="switchPage('admin', this)" id="nav-admin" class="nav-item" style="display:none;">Management HQ</button>
         </div>
-        <div class="logout"><a href="/logout">Log Out</a></div>
+        <div class="logout-area"><a href="/logout" class="logout-btn">Log Out</a></div>
     </aside>
 
+    <!-- MAIN CONTENT -->
     <main class="main">
-        <header class="topbar">
-            <div class="user">
-                <img id="user-avatar" src="">
+        <header class="header">
+            <div class="user-info">
+                <img id="user-avatar" src="" alt="User">
                 <div>
                     <h2 id="user-name">Loading...</h2>
                     <p id="user-rank">...</p>
                 </div>
             </div>
-            <div style="text-align: right;">
-                <p style="font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase;">Total Hours</p>
-                <h3 id="total-hours" style="font-size: 1.2rem;">0.0</h3>
-            </div>
         </header>
 
-        <div class="content">
-            <div id="tab-dashboard" class="tab active">
-                <h2 class="page-title">System Overview</h2>
+        <div class="content-area">
+            
+            <!-- DASHBOARD TAB -->
+            <div id="page-dashboard" class="page active">
+                <h2 class="page-title">Dashboard Overview</h2>
                 <div class="panel">
-                    <h3>Welcome, <span id="dash-name"></span></h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">Use Discord to interact with the automated systems. Clock in via <code>/setup-panels</code> or your shift channel.</p>
+                    <div class="panel-title">Welcome</div>
+                    <p style="color: var(--text-muted);">Select a module from the sidebar to begin your shift or submit logs.</p>
                 </div>
             </div>
 
-            <div id="tab-profile" class="tab">
-                <h2 class="page-title">Personnel File</h2>
-                <div class="panel">
-                    <p style="color: var(--text-muted);">Detailed service records are managed via Discord commands like <code>/roster-view</code> and <code>/promotion-history</code>.</p>
-                </div>
+            <!-- OTHER TABS (To be built in the next stages) -->
+            <div id="page-profile" class="page">
+                <h2 class="page-title">My Profile</h2>
+                <div class="panel"><p style="color: var(--text-muted);">Profile data loading...</p></div>
+            </div>
+            
+            <div id="page-shifts" class="page">
+                <h2 class="page-title">Shift Center</h2>
+                <div class="panel"><p style="color: var(--text-muted);">Shift module loading...</p></div>
             </div>
 
-            <div id="tab-documents" class="tab">
-                <h2 class="page-title">Document Center</h2>
-                <div class="panel">
-                    <div class="panel-header">Department Handbook</div>
-                    <div id="doc-handbook-content" style="white-space: pre-wrap; font-size: 0.9rem; color: var(--text-muted);">Loading...</div>
-                </div>
-                <div class="panel">
-                    <div class="panel-header">Department Policies</div>
-                    <div id="doc-policies-content" style="white-space: pre-wrap; font-size: 0.9rem; color: var(--text-muted);">Loading...</div>
-                </div>
-            </div>
         </div>
     </main>
 
     <script>
         let user = {};
-        function switchTab(id, btn) {
-            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
-            btn.classList.add('active');
-            if (id === 'documents') { loadDoc('handbook'); loadDoc('policies'); }
-        }
 
-        async function loadDoc(type) {
-            const res = await fetch(`/api/docs/${type}`);
-            const data = await res.json();
-            document.getElementById(`doc-${type}-content`).innerText = data.content || 'No document published.';
+        function switchPage(pageId, btn) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
+            document.getElementById('page-' + pageId).classList.add('active');
+            if (btn) btn.classList.add('active');
         }
 
         async function init() {
             const res = await fetch('/api/me');
             if (!res.ok) return window.location.href = '/';
             user = await res.json();
+            
             document.getElementById('user-name').innerText = user.username;
-            document.getElementById('dash-name').innerText = user.username;
             document.getElementById('user-rank').innerText = user.rank;
             document.getElementById('user-avatar').src = user.avatar_url;
-            if (user.rankLevel >= 7) document.getElementById('nav-mgmt').style.display = 'block';
-            
-            const statRes = await fetch('/api/my-stats');
-            const stats = await statRes.json();
-            document.getElementById('total-hours').innerText = (stats.totalMinutes / 60).toFixed(1);
+
+            if (user.rankLevel >= 7) {
+                document.getElementById('nav-admin').style.display = 'block';
+            }
         }
         init();
     </script>
