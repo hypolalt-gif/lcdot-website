@@ -20,7 +20,7 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar Navigation */
+        /* Sidebar */
         .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
         .brand { padding: 1.5rem; border-bottom: 1px solid var(--border); text-align: center; }
         .brand h1 { font-family: 'Merriweather', serif; font-size: 1.1rem; color: var(--gold); }
@@ -54,27 +54,30 @@
         th { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 500; }
         td { padding: 0.75rem; border-bottom: 1px solid var(--border); }
         tr:hover { background: rgba(255,255,255,0.01); }
+
+        /* Shift Center Specific */
+        .shift-clock { text-align: center; padding: 2rem 0; }
+        .shift-timer { font-family: monospace; font-size: 3.5rem; font-weight: 700; color: white; margin-bottom: 1rem; }
+        .btn-shift { padding: 0.8rem 2rem; border: none; border-radius: 4px; font-weight: 600; font-size: 1rem; cursor: pointer; transition: 0.2s; }
+        .btn-start { background: var(--success); color: #000; }
+        .btn-start:hover { background: #16a34a; }
+        .btn-stop { background: var(--danger); color: white; }
+        .btn-stop:hover { background: #dc2626; }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
-    <!-- SIDEBAR (Matches Spec Section 5.1) -->
     <aside class="sidebar">
         <div class="brand"><h1>LCDOT Portal</h1></div>
         <div class="nav">
             <button onclick="switchPage('dashboard', this)" class="nav-item active">Dashboard</button>
             <button onclick="switchPage('profile', this)" class="nav-item">My Profile</button>
-            <button onclick="switchPage('directory', this)" class="nav-item">Employee Directory</button>
             <button onclick="switchPage('shifts', this)" class="nav-item">Shift Center</button>
-            <button onclick="switchPage('logs', this)" class="nav-item">Activity Logs</button>
-            <button onclick="switchPage('loa', this)" class="nav-item">LOA Requests</button>
-            <button onclick="switchPage('documents', this)" class="nav-item">Document Center</button>
-            <button onclick="switchPage('admin', this)" id="nav-admin" class="nav-item" style="display:none;">Management HQ</button>
         </div>
         <div class="logout-area"><a href="/logout" class="logout-btn">Log Out</a></div>
     </aside>
 
-    <!-- MAIN CONTENT -->
     <main class="main">
         <header class="header">
             <div class="user-info">
@@ -88,7 +91,6 @@
 
         <div class="content-area">
             
-            <!-- DASHBOARD TAB -->
             <div id="page-dashboard" class="page active">
                 <h2 class="page-title">Dashboard Overview</h2>
                 <div class="panel">
@@ -97,15 +99,40 @@
                 </div>
             </div>
 
-            <!-- OTHER TABS (To be built in the next stages) -->
             <div id="page-profile" class="page">
                 <h2 class="page-title">My Profile</h2>
                 <div class="panel"><p style="color: var(--text-muted);">Profile data loading...</p></div>
             </div>
             
+            <!-- SHIFT CENTER TAB -->
             <div id="page-shifts" class="page">
                 <h2 class="page-title">Shift Center</h2>
-                <div class="panel"><p style="color: var(--text-muted);">Shift module loading...</p></div>
+                
+                <div class="panel">
+                    <div class="panel-title">Shift Timer</div>
+                    <div class="shift-clock">
+                        <div class="shift-timer" id="timer-display">00:00:00</div>
+                        <button id="btn-clockin" class="btn-shift btn-start" onclick="clockIn()">Clock In</button>
+                        <button id="btn-clockout" class="btn-shift btn-stop hidden" onclick="clockOut()">Clock Out</button>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <div class="panel-title">Recent Shift History</div>
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Start Time</th>
+                                <th>End Time</th>
+                                <th>Duration</th>
+                            </tr>
+                        </thead>
+                        <tbody id="shift-history-body">
+                            <tr><td colspan="4" style="text-align:center;">Loading history...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
         </div>
@@ -113,12 +140,15 @@
 
     <script>
         let user = {};
+        let timerInterval;
 
         function switchPage(pageId, btn) {
             document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('active'));
             document.getElementById('page-' + pageId).classList.add('active');
             if (btn) btn.classList.add('active');
+            
+            if (pageId === 'shifts') loadShiftData();
         }
 
         async function init() {
@@ -129,12 +159,76 @@
             document.getElementById('user-name').innerText = user.username;
             document.getElementById('user-rank').innerText = user.rank;
             document.getElementById('user-avatar').src = user.avatar_url;
+        }
 
-            if (user.rankLevel >= 7) {
-                document.getElementById('nav-admin').style.display = 'block';
+        // --- SHIFT CENTER LOGIC ---
+        async function loadShiftData() {
+            // Check for active shift
+            const activeRes = await fetch('/api/shifts/active');
+            const activeShift = await activeRes.json();
+
+            if (activeShift) {
+                document.getElementById('btn-clockin').classList.add('hidden');
+                document.getElementById('btn-clockout').classList.remove('hidden');
+                startTimer(new Date(activeShift.start_time).getTime());
+            } else {
+                document.getElementById('btn-clockin').classList.remove('hidden');
+                document.getElementById('btn-clockout').classList.add('hidden');
+                document.getElementById('timer-display').innerText = "00:00:00";
+                clearInterval(timerInterval);
+            }
+
+            // Load history
+            const historyRes = await fetch('/api/shifts/history');
+            const history = await historyRes.json();
+            
+            const tbody = document.getElementById('shift-history-body');
+            if (history.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">No recent shifts.</td></tr>';
+            } else {
+                tbody.innerHTML = history.map(s => {
+                    const start = new Date(s.start_time);
+                    const end = new Date(s.end_time);
+                    return `
+                        <tr>
+                            <td>${start.toLocaleDateString()}</td>
+                            <td>${start.toLocaleTimeString()}</td>
+                            <td>${end.toLocaleTimeString()}</td>
+                            <td>${s.duration_minutes} mins</td>
+                        </tr>
+                    `;
+                }).join('');
             }
         }
+
+        function startTimer(startTimeMs) {
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                const diff = Date.now() - startTimeMs;
+                const h = Math.floor(diff / 3600000).toString().padStart(2, '0');
+                const m = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
+                const s = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+                document.getElementById('timer-display').innerText = `${h}:${m}:${s}`;
+            }, 1000);
+        }
+
+        async function clockIn() {
+            const res = await fetch('/api/shifts/clock-in', { method: 'POST' });
+            if (res.ok) loadShiftData();
+            else alert("Error clocking in.");
+        }
+
+        async function clockOut() {
+            const res = await fetch('/api/shifts/clock-out', { method: 'POST' });
+            if (res.ok) loadShiftData();
+            else alert("Error clocking out.");
+        }
+
+        // Initial load
         init();
+        // Check if they are on the shifts page by default (they aren't, but good to pre-load if needed)
+        loadShiftData();
+
     </script>
 </body>
 </html>

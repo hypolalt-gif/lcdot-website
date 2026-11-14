@@ -6,8 +6,8 @@ const { MongoStore } = require('connect-mongo');
 const path = require('path');
 const fs = require('fs');
 const helmet = require('helmet');
-const { Client, GatewayIntentBits, REST, Routes, Collection } = require('discord.js');
-const { MongoClient } = require('mongodb');
+const { Client, GatewayIntentBits, REST, Routes, Collection, EmbedBuilder } = require('discord.js');
+const { MongoClient, ObjectId } = require('mongodb');
 
 const app = express();
 const bot = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
@@ -40,12 +40,10 @@ bot.once('clientReady', async () => {
 // --- 3. INTERACTION HANDLER ---
 bot.on('interactionCreate', async interaction => {
     if (!interaction.isChatInputCommand()) return;
-    
     const command = bot.commands.get(interaction.commandName);
     if (!command) return;
 
     try {
-        // Execute the command module, passing the interaction and the database connection
         await command.execute(interaction, db);
     } catch (error) {
         console.error(`Error executing ${interaction.commandName}:`, error);
@@ -73,14 +71,13 @@ async function startServer() {
             cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 30 } 
         }));
 
-        // Discord OAuth Login
+        // --- AUTHENTICATION ---
         app.get('/auth/discord', (req, res) => {
             const scope = 'identify guilds.members.read';
             const redirectUri = encodeURIComponent(process.env.REDIRECT_URI || 'http://localhost:3000/auth/discord/callback');
             res.redirect(`https://discord.com/oauth2/authorize?client_id=${process.env.CLIENT_ID}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`);
         });
 
-        // Discord OAuth Callback
         app.get('/auth/discord/callback', async (req, res) => {
             const code = req.query.code;
             if (!code) return res.redirect('/');
@@ -90,14 +87,12 @@ async function startServer() {
                 const accessToken = tokenResponse.data.access_token;
                 const userResponse = await axios.get('https://discord.com/api/users/@me', { headers: { Authorization: `Bearer ${accessToken}` } });
                 
-                // Fetch roles to determine rank
                 let roles = [];
                 try {
                     const memberResponse = await axios.get(`https://discord.com/api/users/@me/guilds/${process.env.GUILD_ID}/member`, { headers: { Authorization: `Bearer ${accessToken}` } });
                     roles = memberResponse.data.roles;
                 } catch (error) { return res.send("You must be in the Lakeview City DOT Discord server."); }
 
-                // Determine Rank (Expand this mapping later)
                 let rank = "Probationary", rankLevel = 0;
                 if (roles.includes(process.env.ROLE_EXEC)) { rank = "Executive Board"; rankLevel = 8; }
                 else if (roles.includes(process.env.ROLE_MGMT)) { rank = "Management Team"; rankLevel = 7; }
@@ -106,7 +101,6 @@ async function startServer() {
 
                 const avatarUrl = userResponse.data.avatar ? `https://cdn.discordapp.com/avatars/${userResponse.data.id}/${userResponse.data.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/0.png`;
                 
-                // Upsert User into DB
                 await db.collection('users').updateOne(
                     { id: userResponse.data.id }, 
                     { 
@@ -124,6 +118,92 @@ async function startServer() {
         app.get('/dashboard', (req, res) => { if (!req.session.user) return res.redirect('/'); res.sendFile(path.join(__dirname, 'public', 'dashboard.html')); });
         app.get('/api/me', (req, res) => { if (!req.session.user) return res.status(401).json({ error: 'Not logged in' }); res.json(req.session.user); });
         app.get('/logout', (req, res) => { req.session.destroy(); res.redirect('/'); });
+
+        // --- SHIFT CENTER APIS ---
+        app.get('/api/shifts/active', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            const activeShift = await db.collection('shifts').findOne({ user_id: req.session.user.id, status: 'active' });
+            res.json(activeShift || null);
+        });
+
+        app.get('/api/shifts/history', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            const history = await db.collection('shifts').find({ user_id: req.session.user.id, status: 'completed' }).sort({ start_time: -1 }).limit(10).toArray();
+            res.json(history);
+        });
+
+        app.post('/api/shifts/clock-in', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            
+            const activeShift = await db.collection('shifts').findOne({ user_id: req.session.user.id, status: 'active' });
+            if (activeShift) return res.status(400).json({ error: 'You are already clocked in.' });
+
+            // Create shift record
+            await db.collection('shifts').insertOne({ 
+                user_id: req.session.user.id, 
+                username: req.session.user.username,
+                start_time: new Date(), 
+                status: 'active' 
+            });
+
+            // Sync to Discord
+            try {
+                const guild = await bot.guilds.fetch(process.env.GUILD_ID);
+                const member = await guild.members.fetch(req.session.user.id);
+                if (member) await member.roles.add(process.env.ROLE_ON_DUTY);
+                
+                if (process.env.CHANNEL_SHIFT) {
+                    const channel = await bot.channels.fetch(process.env.CHANNEL_SHIFT);
+                    if (channel) {
+                        const embed = new EmbedBuilder().setTitle('🟢 Shift Started').setDescription(`**User:** ${req.session.user.username}`).setColor('#22c55e').setTimestamp();
+                        await channel.send({ embeds: [embed] });
+                    }
+                }
+            } catch (err) { console.error("Discord Sync Error (Clock In):", err); }
+
+            res.json({ success: true });
+        });
+
+        app.post('/api/shifts/clock-out', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            
+            const activeShift = await db.collection('shifts').findOne({ user_id: req.session.user.id, status: 'active' });
+            if (!activeShift) return res.status(400).json({ error: 'You are not currently clocked in.' });
+
+            // Calculate duration safely on the server
+            const endTime = new Date();
+            const startTime = new Date(activeShift.start_time);
+            const durationMinutes = Math.floor((endTime - startTime) / 60000);
+
+            // Update shift record
+            await db.collection('shifts').updateOne(
+                { _id: activeShift._id },
+                { $set: { end_time: endTime, duration_minutes: durationMinutes, status: 'completed' } }
+            );
+
+            // Update User Stats
+            await db.collection('users').updateOne(
+                { id: req.session.user.id },
+                { $inc: { total_minutes: durationMinutes, weekly_minutes: durationMinutes } }
+            );
+
+            // Sync to Discord
+            try {
+                const guild = await bot.guilds.fetch(process.env.GUILD_ID);
+                const member = await guild.members.fetch(req.session.user.id);
+                if (member) await member.roles.remove(process.env.ROLE_ON_DUTY);
+                
+                if (process.env.CHANNEL_SHIFT) {
+                    const channel = await bot.channels.fetch(process.env.CHANNEL_SHIFT);
+                    if (channel) {
+                        const embed = new EmbedBuilder().setTitle('🔴 Shift Ended').setDescription(`**User:** ${req.session.user.username}\n**Time:** ${durationMinutes} minutes`).setColor('#ef4444').setTimestamp();
+                        await channel.send({ embeds: [embed] });
+                    }
+                }
+            } catch (err) { console.error("Discord Sync Error (Clock Out):", err); }
+
+            res.json({ success: true, durationMinutes });
+        });
 
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, '0.0.0.0', () => console.log(`✅ LCDOT Master Server running on port ${PORT}`));
