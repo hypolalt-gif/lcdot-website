@@ -35,7 +35,6 @@ module.exports = (db) => {
                 return res.status(403).send("Access Denied. You must be in the Lakeview City DOT Discord server."); 
             }
 
-            // Determine Rank based on spec hierarchy
             let rank = "Probationary", rankLevel = 0;
             if (roles.includes(process.env.ROLE_EXEC)) { rank = "Executive Board"; rankLevel = 8; }
             else if (roles.includes(process.env.ROLE_MGMT)) { rank = "Management Team"; rankLevel = 7; }
@@ -48,15 +47,10 @@ module.exports = (db) => {
 
             const avatarUrl = userResponse.data.avatar ? `https://cdn.discordapp.com/avatars/${userResponse.data.id}/${userResponse.data.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/0.png`;
             
-            // Save/Update Employee Record
             await db.collection('users').updateOne(
                 { id: userResponse.data.id }, 
                 { 
-                    $set: { 
-                        username: userResponse.data.username, 
-                        rank, rank_level: rankLevel, avatar_url: avatarUrl, 
-                        status: 'Active'
-                    }, 
+                    $set: { username: userResponse.data.username, rank, rank_level: rankLevel, avatar_url: avatarUrl, status: 'Active' }, 
                     $setOnInsert: { total_minutes: 0, weekly_minutes: 0, joined_at: new Date() } 
                 }, 
                 { upsert: true }
