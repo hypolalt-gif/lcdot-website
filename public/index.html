@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lakeview City DOT | Website</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Merriweather:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #09090b; --bg-panel: #18181b; --text-main: #f4f4f5; --text-muted: #a1a1aa;
+            --gold: #d4af37; --border: #27272a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text-main); line-height: 1.6; }
+
+        nav { background: var(--bg-panel); border-bottom: 1px solid var(--border); padding: 0 2rem; position: sticky; top: 0; }
+        .nav-inner { max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; height: 70px; }
+        .logo { font-family: 'Merriweather', serif; font-size: 1.2rem; color: var(--gold); text-decoration: none; }
+        .nav-links { display: flex; gap: 1.5rem; align-items: center; }
+        .nav-links a { color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; }
+        .nav-links a:hover { color: white; }
+        .btn-login { background: var(--gold); color: #000 !important; padding: 0.5rem 1rem; border-radius: 4px; font-weight: 600; }
+
+        .hero { padding: 8rem 2rem; text-align: center; border-bottom: 1px solid var(--border); }
+        .hero h1 { font-family: 'Merriweather', serif; font-size: 3rem; margin-bottom: 1rem; color: white; }
+        .hero p { color: var(--text-muted); max-width: 600px; margin: 0 auto; font-size: 1.1rem; }
+        
+        footer { padding: 2rem; text-align: center; color: var(--text-muted); font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <nav>
+        <div class="nav-inner">
+            <a href="/" class="logo">Lakeview City DOT</a>
+            <div class="nav-links">
+                <a href="#about">About</a>
+                <a href="#leadership">Leadership</a>
+                <a href="#divisions">Divisions</a>
+                <a href="#recruitment">Recruitment</a>
+                <a href="/auth/discord" class="btn-login">Employee Login</a>
+            </div>
+        </div>
+    </nav>
+
+    <header class="hero">
+        <h1>Department of Transportation</h1>
+        <p>Maintaining the infrastructure, managing traffic operations, and ensuring the safety of Lakeview's roadways.</p>
+    </header>
+
+    <footer>
+        &copy; 2026 Lakeview City DOT. All Rights Reserved. Site is managed by Hypol17, DOT director.
+    </footer>
+</body>
+</html>

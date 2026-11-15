@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>LCDOT | Employee Portal</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #09090b; --bg-panel: #18181b; --sidebar: #121215; --text-main: #f4f4f5; --text-muted: #a1a1aa;
+            --gold: #d4af37; --border: #27272a;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
+
+        .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+        .brand { padding: 1.5rem; border-bottom: 1px solid var(--border); text-align: center; }
+        .brand h1 { font-size: 1rem; color: var(--gold); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
+        .nav { padding: 1rem 0; flex: 1; }
+        .nav-item { display: block; padding: 0.8rem 1.5rem; color: var(--text-muted); text-decoration: none; font-size: 0.9rem; font-weight: 500; border-left: 3px solid transparent; }
+        .nav-item.active { color: var(--gold); border-left-color: var(--gold); background: rgba(212, 175, 55, 0.05); }
+        
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .header { padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: var(--bg-panel); display: flex; justify-content: space-between; align-items: center; }
+        .user-info { display: flex; align-items: center; gap: 1rem; }
+        .user-info img { width: 36px; height: 36px; border-radius: 4px; }
+        .user-info h2 { font-size: 0.9rem; }
+        .user-info p { font-size: 0.75rem; color: var(--gold); font-weight: 600; }
+        
+        .content { padding: 2rem; flex: 1; overflow-y: auto; }
+        .panel { background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <aside class="sidebar">
+        <div class="brand"><h1>LCDOT Portal</h1></div>
+        <div class="nav">
+            <a href="#" class="nav-item active">Dashboard</a>
+            <a href="#" class="nav-item">Roster</a>
+            <a href="#" class="nav-item">Shift Center</a>
+        </div>
+        <div style="padding: 1rem; border-top: 1px solid var(--border);">
+            <a href="/auth/logout" style="display:block; text-align:center; color: #ef4444; text-decoration:none; font-size:0.85rem; padding: 0.5rem;">Log Out</a>
+        </div>
+    </aside>
+
+    <main class="main">
+        <header class="header">
+            <div class="user-info">
+                <img id="user-avatar" src="">
+                <div>
+                    <h2 id="user-name">Loading...</h2>
+                    <p id="user-rank">...</p>
+                </div>
+            </div>
+        </header>
+        <div class="content">
+            <div class="panel">
+                <h2 style="font-size: 1.2rem; margin-bottom: 0.5rem;">Welcome to the Portal</h2>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Select a module from the sidebar to proceed.</p>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        async function init() {
+            const res = await fetch('/api/me');
+            if (!res.ok) return window.location.href = '/';
+            const user = await res.json();
+            document.getElementById('user-name').innerText = user.username;
+            document.getElementById('user-rank').innerText = user.rank;
+            document.getElementById('user-avatar').src = user.avatar_url;
+        }
+        init();
+    </script>
+</body>
+</html>
