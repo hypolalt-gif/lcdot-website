@@ -31,7 +31,6 @@ module.exports = {
         const oldRank = interaction.options.getString('old_rank');
         const reason = interaction.options.getString('reason');
 
-        // Save request to DB to generate a unique ID
         const requestData = {
             targetId: targetUser.id,
             targetName: targetUser.username,
@@ -47,7 +46,6 @@ module.exports = {
         const result = await db.collection('promotion_requests').insertOne(requestData);
         const requestId = result.insertedId.toString();
 
-        // Build the request embed (Pic 2)
         const embed = new EmbedBuilder()
             .setColor('#18181b')
             .setTitle('Promotion Request')
@@ -60,13 +58,11 @@ module.exports = {
             )
             .setTimestamp();
 
-        // Buttons
         const row = new ActionRowBuilder().addComponents(
             new ButtonBuilder().setCustomId(`approve_promo_${requestId}`).setLabel('Promote').setStyle(ButtonStyle.Success),
             new ButtonBuilder().setCustomId(`deny_promo_${requestId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
         );
 
-        // Send to the Promotion Request Channel
         try {
             const requestChannel = await interaction.guild.channels.fetch('1525267491314602255');
             await requestChannel.send({ embeds: [embed], components: [row] });

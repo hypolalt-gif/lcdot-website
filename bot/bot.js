@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Collection, REST, Routes, EmbedBuilder } = require('discord.js');
+const { Client, GatewayIntentBits, Collection, REST, Routes, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 const fs = require('fs');
 const path = require('path');
 const { ObjectId } = require('mongodb');
@@ -29,79 +29,71 @@ if (fs.existsSync(commandsPath)) {
     });
 }
 
-// Handle Slash Commands
+// Handle Interactions
 bot.on('interactionCreate', async interaction => {
-    if (interaction.isChatInputCommand()) {
-        const command = bot.commands.get(interaction.commandName);
-        if (!command) return;
-        try {
+    try {
+        // --- SLASH COMMANDS ---
+        if (interaction.isChatInputCommand()) {
+            const command = bot.commands.get(interaction.commandName);
+            if (!command) return;
             await command.execute(interaction, global.db);
-        } catch (error) {
-            console.error(`Error in /${interaction.commandName}:`, error);
-            const errorMsg = { content: 'There was an error executing this command.', ephemeral: true };
-            if (interaction.replied || interaction.deferred) await interaction.followUp(errorMsg);
-            else await interaction.reply(errorMsg);
+            return;
         }
-    }
 
-    // Handle Buttons
-    if (interaction.isButton()) {
-        const db = global.db;
-        const customId = interaction.customId;
+        // --- BUTTONS ---
+        if (interaction.isButton()) {
+            const db = global.db;
+            const customId = interaction.customId;
 
-        if (customId.startsWith('approve_promo_') || customId.startsWith('deny_promo_')) {
-            await interaction.deferUpdate(); // Acknowledge click
+            if (customId.startsWith('approve_promo_') || customId.startsWith('deny_promo_')) {
+                // Acknowledge the click immediately so Discord doesn't time out
+                await interaction.deferUpdate();
 
-            const isApprove = customId.startsWith('approve_promo_');
-            const requestId = customId.split('_')[2];
-            
-            const requestData = await db.collection('promotion_requests').findOne({ _id: new ObjectId(requestId) });
-            if (!requestData || requestData.status !== 'Pending') {
-                return interaction.followUp({ content: '❌ This request has already been processed.', ephemeral: true });
-            }
-
-            // Disable buttons on the original message
-            const disabledRow = new ActionRowBuilder().addComponents(
-                new ButtonBuilder().setCustomId('disabled_1').setLabel('Promote').setStyle(ButtonStyle.Success).setDisabled(true),
-                new ButtonBuilder().setCustomId('disabled_2').setLabel('Deny').setStyle(ButtonStyle.Danger).setDisabled(true)
-            );
-
-            if (!isApprove) {
-                // --- DENY LOGIC ---
-                await db.collection('promotion_requests').updateOne({ _id: new ObjectId(requestId) }, { $set: { status: 'Denied' } });
+                const isApprove = customId.startsWith('approve_promo_');
+                const requestId = customId.split('_')[2];
                 
-                // Update original message
+                const requestData = await db.collection('promotion_requests').findOne({ _id: new ObjectId(requestId) });
+                if (!requestData || requestData.status !== 'Pending') {
+                    return interaction.followUp({ content: '❌ This request has already been processed.', ephemeral: true });
+                }
+
+                // Disable buttons
+                const disabledRow = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId('disabled_1').setLabel('Promote').setStyle(ButtonStyle.Success).setDisabled(true),
+                    new ButtonBuilder().setCustomId('disabled_2').setLabel('Deny').setStyle(ButtonStyle.Danger).setDisabled(true)
+                );
                 await interaction.message.edit({ components: [disabledRow] });
 
-                // Send message to the requester (Pic 4)
-                const requester = await interaction.guild.members.fetch(requestData.requesterId);
-                const denyMsg = `<@${requestData.requesterId}> your promotion request for <@${requestData.targetId}> was unfortunately **denied**. Please contact your chain of command for further details.`;
-                
-                try {
-                    await requester.send(denyMsg);
-                } catch (e) {
-                    // Fallback to channel if DMs are closed
-                    await interaction.channel.send(denyMsg);
+                if (!isApprove) {
+                    // --- DENY LOGIC ---
+                    await db.collection('promotion_requests').updateOne({ _id: new ObjectId(requestId) }, { $set: { status: 'Denied' } });
+                    
+                    const requester = await interaction.guild.members.fetch(requestData.requesterId);
+                    const denyMsg = `<@${requestData.requesterId}> your promotion request for <@${requestData.targetId}> was unfortunately **denied**. Please contact your chain of command for further details.`;
+                    
+                    try {
+                        await requester.send(denyMsg);
+                    } catch (e) {
+                        await interaction.channel.send(denyMsg);
+                    }
+                    return;
                 }
-                return;
-            }
 
-            // --- APPROVE LOGIC ---
-            const rankConfig = {
-                "Junior Operator": { level: 1, role: process.env.ROLE_JUNIOR },
-                "Operator": { level: 2, role: process.env.ROLE_OPERATOR },
-                "Senior Operator": { level: 3, role: process.env.ROLE_SENIOR },
-                "Specialist": { level: 4, role: process.env.ROLE_SPECIALIST },
-                "Crew Supervisor": { level: 5, role: process.env.ROLE_CREW },
-                "Field Supervisor": { level: 6, role: process.env.ROLE_FIELD },
-                "Management Team": { level: 7, role: process.env.ROLE_MGMT },
-                "Executive Board": { level: 8, role: process.env.ROLE_EXEC }
-            };
+                // --- APPROVE LOGIC ---
+                const rankConfig = {
+                    "Junior Operator": { level: 1, role: process.env.ROLE_JUNIOR },
+                    "Operator": { level: 2, role: process.env.ROLE_OPERATOR },
+                    "Senior Operator": { level: 3, role: process.env.ROLE_SENIOR },
+                    "Specialist": { level: 4, role: process.env.ROLE_SPECIALIST },
+                    "Crew Supervisor": { level: 5, role: process.env.ROLE_CREW },
+                    "Field Supervisor": { level: 6, role: process.env.ROLE_FIELD },
+                    "Management Team": { level: 7, role: process.env.ROLE_MGMT },
+                    "Executive Board": { level: 8, role: process.env.ROLE_EXEC }
+                };
 
-            const newConfig = rankConfig[requestData.newRank];
-            const oldConfig = rankConfig[requestData.oldRank];
+                const newConfig = rankConfig[requestData.newRank];
+                const oldConfig = rankConfig[requestData.oldRank];
 
-            try {
                 const targetMember = await interaction.guild.members.fetch(requestData.targetId);
                 
                 // Swap Roles
@@ -118,9 +110,6 @@ bot.on('interactionCreate', async interaction => {
                     { id: requestData.targetId }, 
                     { $set: { rank: requestData.newRank, rank_level: newConfig.level } }
                 );
-
-                // Update original message
-                await interaction.message.edit({ components: [disabledRow] });
 
                 // 1. Send to Promo Channel (Pic 3)
                 const promoChannel = await interaction.guild.channels.fetch('1489842457666654338');
@@ -154,11 +143,13 @@ bot.on('interactionCreate', async interaction => {
                     .setTimestamp();
                 
                 await promoChannel.send({ content: `<@${requestData.targetId}>`, embeds: [userEmbed] });
-
-            } catch (error) {
-                console.error("Error processing approval:", error);
-                await interaction.followUp({ content: '❌ Failed to assign roles. Check bot permissions and role hierarchy.', ephemeral: true });
             }
+        }
+    } catch (error) {
+        console.error("Interaction Error:", error);
+        // Only reply if the interaction hasn't been acknowledged yet
+        if (!interaction.replied && !interaction.deferred) {
+            await interaction.reply({ content: 'There was an error processing this interaction.', ephemeral: true });
         }
     }
 });
