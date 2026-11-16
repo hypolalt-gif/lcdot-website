@@ -1,66 +1,79 @@
-const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
+const { SlashCommandBuilder, EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
 
 module.exports = {
     data: new SlashCommandBuilder()
         .setName('promote')
-        .setDescription('Promote a department member')
+        .setDescription('Submit a promotion request for an operator')
         .addUserOption(opt => opt.setName('user').setDescription('The user to promote').setRequired(true))
-        .addStringOption(opt => opt.setName('rank').setDescription('The new rank').setRequired(true).addChoices(
+        .addStringOption(opt => opt.setName('new_rank').setDescription('The new rank').setRequired(true).addChoices(
             { name: 'Junior Operator', value: 'Junior Operator' }, { name: 'Operator', value: 'Operator' },
             { name: 'Senior Operator', value: 'Senior Operator' }, { name: 'Specialist', value: 'Specialist' },
             { name: 'Crew Supervisor', value: 'Crew Supervisor' }, { name: 'Field Supervisor', value: 'Field Supervisor' },
             { name: 'Management Team', value: 'Management Team' }, { name: 'Executive Board', value: 'Executive Board' }
-        )),
+        ))
+        .addStringOption(opt => opt.setName('old_rank').setDescription('The previous rank').setRequired(true).addChoices(
+            { name: 'Junior Operator', value: 'Junior Operator' }, { name: 'Operator', value: 'Operator' },
+            { name: 'Senior Operator', value: 'Senior Operator' }, { name: 'Specialist', value: 'Specialist' },
+            { name: 'Crew Supervisor', value: 'Crew Supervisor' }, { name: 'Field Supervisor', value: 'Field Supervisor' },
+            { name: 'Management Team', value: 'Management Team' }, { name: 'Executive Board', value: 'Executive Board' }
+        ))
+        .addStringOption(opt => opt.setName('reason').setDescription('Reason for promotion').setRequired(true)),
     
     async execute(interaction, db) {
         await interaction.deferReply({ ephemeral: true });
 
         if (!interaction.member.roles.cache.has(process.env.ROLE_MGMT) && !interaction.member.roles.cache.has(process.env.ROLE_EXEC)) {
-            return interaction.editReply({ content: '❌ You do not have permission to promote members.' });
+            return interaction.editReply({ content: '❌ You do not have permission to request promotions.' });
         }
 
         const targetUser = interaction.options.getUser('user');
-        const newRank = interaction.options.getString('rank');
+        const newRank = interaction.options.getString('new_rank');
+        const oldRank = interaction.options.getString('old_rank');
+        const reason = interaction.options.getString('reason');
 
-        const rankConfig = {
-            "Junior Operator": { level: 1, role: process.env.ROLE_JUNIOR },
-            "Operator": { level: 2, role: process.env.ROLE_OPERATOR },
-            "Senior Operator": { level: 3, role: process.env.ROLE_SENIOR },
-            "Specialist": { level: 4, role: process.env.ROLE_SPECIALIST },
-            "Crew Supervisor": { level: 5, role: process.env.ROLE_CREW },
-            "Field Supervisor": { level: 6, role: process.env.ROLE_FIELD },
-            "Management Team": { level: 7, role: process.env.ROLE_MGMT },
-            "Executive Board": { level: 8, role: process.env.ROLE_EXEC }
+        // Save request to DB to generate a unique ID
+        const requestData = {
+            targetId: targetUser.id,
+            targetName: targetUser.username,
+            requesterId: interaction.user.id,
+            requesterName: interaction.user.username,
+            newRank: newRank,
+            oldRank: oldRank,
+            reason: reason,
+            status: 'Pending',
+            createdAt: new Date()
         };
 
-        const newConfig = rankConfig[newRank];
-        const targetData = await db.collection('users').findOne({ id: targetUser.id });
-        
-        if (!targetData) return interaction.editReply({ content: '❌ This user does not have a registered DOT profile.' });
+        const result = await db.collection('promotion_requests').insertOne(requestData);
+        const requestId = result.insertedId.toString();
 
-        try {
-            const member = await interaction.guild.members.fetch(targetUser.id);
-            const oldRankConfig = Object.values(rankConfig).find(r => r.level === targetData.rank_level);
-            
-            if (oldRankConfig && oldRankConfig.role) await member.roles.remove(oldRankConfig.role).catch(() => {});
-            if (newConfig.role) await member.roles.add(newConfig.role);
-        } catch (error) { console.error("Discord sync failed", error); }
-
-        await db.collection('users').updateOne(
-            { id: targetUser.id },
-            { $set: { rank: newRank, rank_level: newConfig.level } }
-        );
-
+        // Build the request embed (Pic 2)
         const embed = new EmbedBuilder()
-            .setColor('#22c55e')
-            .setTitle('🎖️ Personnel Promotion')
-            .setDescription(`**${targetUser.username}** has been promoted to **${newRank}**.`)
-            .addFields({ name: 'Promoted By', value: `<@${interaction.user.id}>` })
+            .setColor('#18181b')
+            .setTitle('Promotion Request')
+            .addFields(
+                { name: 'Requested By', value: `<@${interaction.user.id}>`, inline: false },
+                { name: 'User', value: `<@${targetUser.id}>`, inline: false },
+                { name: 'New Rank', value: newRank, inline: false },
+                { name: 'Old Rank', value: oldRank, inline: false },
+                { name: 'Reason', value: reason, inline: false }
+            )
             .setTimestamp();
 
-        await interaction.editReply({ content: `✅ Successfully promoted ${targetUser.username}.`, embeds: [] });
-        
-        // Send the fancy embed to the channel
-        await interaction.channel.send({ embeds: [embed] });
+        // Buttons
+        const row = new ActionRowBuilder().addComponents(
+            new ButtonBuilder().setCustomId(`approve_promo_${requestId}`).setLabel('Promote').setStyle(ButtonStyle.Success),
+            new ButtonBuilder().setCustomId(`deny_promo_${requestId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
+        );
+
+        // Send to the Promotion Request Channel
+        try {
+            const requestChannel = await interaction.guild.channels.fetch('1525267491314602255');
+            await requestChannel.send({ embeds: [embed], components: [row] });
+            await interaction.editReply({ content: `✅ Promotion request submitted successfully for ${targetUser.username}.` });
+        } catch (error) {
+            console.error(error);
+            await interaction.editReply({ content: '❌ Failed to send request to the promotion channel. Check bot permissions.' });
+        }
     }
 };
