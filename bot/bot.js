@@ -7,7 +7,6 @@ require('dotenv').config();
 const bot = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMembers] });
 bot.commands = new Collection();
 
-// Load Commands
 const commandsPath = path.join(__dirname, 'commands');
 if (fs.existsSync(commandsPath)) {
     const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
@@ -29,131 +28,63 @@ if (fs.existsSync(commandsPath)) {
     });
 }
 
-// Handle Interactions
 bot.on('interactionCreate', async interaction => {
     try {
-        // --- SLASH COMMANDS ---
         if (interaction.isChatInputCommand()) {
             const command = bot.commands.get(interaction.commandName);
-            if (!command) return;
-            await command.execute(interaction, global.db);
-            return;
+            if (command) await command.execute(interaction, global.db);
         }
 
-        // --- BUTTONS ---
         if (interaction.isButton()) {
             const db = global.db;
             const customId = interaction.customId;
 
-            if (customId.startsWith('approve_promo_') || customId.startsWith('deny_promo_')) {
-                // Acknowledge the click immediately so Discord doesn't time out
+            // --- LOA HANDLING ---
+            if (customId.startsWith('approve_loa_') || customId.startsWith('deny_loa_')) {
                 await interaction.deferUpdate();
-
-                const isApprove = customId.startsWith('approve_promo_');
+                const isApprove = customId.startsWith('approve_loa_');
                 const requestId = customId.split('_')[2];
-                
-                const requestData = await db.collection('promotion_requests').findOne({ _id: new ObjectId(requestId) });
-                if (!requestData || requestData.status !== 'Pending') {
-                    return interaction.followUp({ content: '❌ This request has already been processed.', ephemeral: true });
-                }
+
+                const requestData = await db.collection('loa_requests').findOne({ _id: new ObjectId(requestId) });
+                if (!requestData || requestData.status !== 'Pending') return;
+
+                const newStatus = isApprove ? 'Approved' : 'Denied';
+                await db.collection('loa_requests').updateOne({ _id: new ObjectId(requestId) }, { $set: { status: newStatus } });
 
                 // Disable buttons
                 const disabledRow = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('disabled_1').setLabel('Promote').setStyle(ButtonStyle.Success).setDisabled(true),
-                    new ButtonBuilder().setCustomId('disabled_2').setLabel('Deny').setStyle(ButtonStyle.Danger).setDisabled(true)
+                    new ButtonBuilder().setCustomId('d1').setLabel('Approve LOA').setStyle(ButtonStyle.Success).setDisabled(true),
+                    new ButtonBuilder().setCustomId('d2').setLabel('Deny').setStyle(ButtonStyle.Danger).setDisabled(true)
                 );
-                await interaction.message.edit({ components: [disabledRow] });
+                
+                const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
+                    .setColor(isApprove ? '#22c55e' : '#ef4444')
+                    .setFooter({ text: `Processed by ${interaction.user.username}` });
 
-                if (!isApprove) {
-                    // --- DENY LOGIC ---
-                    await db.collection('promotion_requests').updateOne({ _id: new ObjectId(requestId) }, { $set: { status: 'Denied' } });
-                    
-                    const requester = await interaction.guild.members.fetch(requestData.requesterId);
-                    const denyMsg = `<@${requestData.requesterId}> your promotion request for <@${requestData.targetId}> was unfortunately **denied**. Please contact your chain of command for further details.`;
-                    
+                await interaction.message.edit({ embeds: [updatedEmbed], components: [disabledRow] });
+
+                const targetMember = await interaction.guild.members.fetch(requestData.user_id);
+
+                if (isApprove) {
+                    await targetMember.roles.add(process.env.ROLE_LOA).catch(console.error);
                     try {
-                        await requester.send(denyMsg);
-                    } catch (e) {
-                        await interaction.channel.send(denyMsg);
-                    }
-                    return;
+                        await targetMember.send({ embeds: [
+                            new EmbedBuilder().setColor('#22c55e').setTitle('LOA Approved').setDescription(`Your Leave of Absence request from **${requestData.startDate}** to **${requestData.endDate}** has been **Approved**. The LOA role has been applied to your account.`)
+                        ]});
+                    } catch (e) { console.log("Could not DM user."); }
+                } else {
+                    try {
+                        await targetMember.send({ embeds: [
+                            new EmbedBuilder().setColor('#ef4444').setTitle('LOA Denied').setDescription(`Your Leave of Absence request from **${requestData.startDate}** to **${requestData.endDate}** has been **Denied**. Please contact a supervisor for more information.`)
+                        ]});
+                    } catch (e) { console.log("Could not DM user."); }
                 }
-
-                // --- APPROVE LOGIC ---
-                const rankConfig = {
-                    "Junior Operator": { level: 1, role: process.env.ROLE_JUNIOR },
-                    "Operator": { level: 2, role: process.env.ROLE_OPERATOR },
-                    "Senior Operator": { level: 3, role: process.env.ROLE_SENIOR },
-                    "Specialist": { level: 4, role: process.env.ROLE_SPECIALIST },
-                    "Crew Supervisor": { level: 5, role: process.env.ROLE_CREW },
-                    "Field Supervisor": { level: 6, role: process.env.ROLE_FIELD },
-                    "Management Team": { level: 7, role: process.env.ROLE_MGMT },
-                    "Executive Board": { level: 8, role: process.env.ROLE_EXEC }
-                };
-
-                const newConfig = rankConfig[requestData.newRank];
-                const oldConfig = rankConfig[requestData.oldRank];
-
-                const targetMember = await interaction.guild.members.fetch(requestData.targetId);
-                
-                // Swap Roles
-                if (oldConfig && oldConfig.role && targetMember.roles.cache.has(oldConfig.role)) {
-                    await targetMember.roles.remove(oldConfig.role).catch(console.error);
-                }
-                if (newConfig && newConfig.role) {
-                    await targetMember.roles.add(newConfig.role);
-                }
-
-                // Update DB
-                await db.collection('promotion_requests').updateOne({ _id: new ObjectId(requestId) }, { $set: { status: 'Approved' } });
-                await db.collection('users').updateOne(
-                    { id: requestData.targetId }, 
-                    { $set: { rank: requestData.newRank, rank_level: newConfig.level } }
-                );
-
-                // 1. Send to Promo Channel (Pic 3)
-                const promoChannel = await interaction.guild.channels.fetch('1489842457666654338');
-                const promoEmbed = new EmbedBuilder()
-                    .setColor('#2b2d31')
-                    .setTitle('Department Promotion Notice')
-                    .setDescription('The following user was promoted within the department, more information can be seen below.')
-                    .addFields(
-                        { name: 'User', value: `<@${requestData.targetId}>`, inline: false },
-                        { name: 'Superior', value: `<@${interaction.user.id}>`, inline: false },
-                        { name: 'New Rank', value: requestData.newRank, inline: false },
-                        { name: 'Previous Rank', value: requestData.oldRank, inline: false }
-                    )
-                    .setFooter({ text: 'Lakeview City DOT | Personnel Management' })
-                    .setTimestamp();
-
-                const sentMessage = await promoChannel.send({ embeds: [promoEmbed] });
-                await sentMessage.react('🎉');
-
-                // 2. Send to Promoted User (Pic 5)
-                const userEmbed = new EmbedBuilder()
-                    .setColor('#18181b')
-                    .setTitle('Department of Transportation | Promotion')
-                    .setDescription('The following user has been promoted for their continued dedication. Please review additional information below.')
-                    .addFields(
-                        { name: 'User', value: `<@${requestData.targetId}>`, inline: false },
-                        { name: 'Reason', value: requestData.reason, inline: false },
-                        { name: 'New Rank', value: requestData.newRank, inline: false },
-                        { name: 'Superior', value: `<@${interaction.user.id}>`, inline: false }
-                    )
-                    .setTimestamp();
-                
-                await promoChannel.send({ content: `<@${requestData.targetId}>`, embeds: [userEmbed] });
             }
         }
     } catch (error) {
         console.error("Interaction Error:", error);
-        // Only reply if the interaction hasn't been acknowledged yet
-        if (!interaction.replied && !interaction.deferred) {
-            await interaction.reply({ content: 'There was an error processing this interaction.', ephemeral: true });
-        }
     }
 });
 
 bot.login(process.env.BOT_TOKEN).catch(err => console.error("Discord Login Error:", err));
-
 module.exports = bot;

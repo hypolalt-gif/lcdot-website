@@ -42,14 +42,13 @@
         td { padding: 0.75rem; border-bottom: 1px solid var(--border); }
         tr:hover { background: rgba(255,255,255,0.02); }
 
-        input, select { width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; font-family: inherit; margin-bottom: 1rem; border-radius: 4px; }
+        input, select, textarea { width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; font-family: inherit; margin-bottom: 1rem; border-radius: 4px; }
         .btn { background: var(--gold); color: #000; border: none; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; border-radius: 4px; }
-        .btn-green { background: var(--success); color: white; }
-        .btn-red { background: var(--danger); color: white; }
         
         .status { padding: 0.2rem 0.5rem; font-size: 0.75rem; font-weight: 600; border-radius: 4px; }
         .status-active { background: rgba(34, 197, 94, 0.2); color: var(--success); }
         .status-suspended { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
+        .status-pending { background: rgba(234, 179, 8, 0.2); color: #eab308; }
     </style>
 </head>
 <body>
@@ -58,6 +57,7 @@
         <div class="nav">
             <button onclick="switchPage('dashboard', this)" class="nav-item active">Dashboard</button>
             <button onclick="switchPage('directory', this)" class="nav-item">Employee Directory</button>
+            <button onclick="switchPage('loa', this)" class="nav-item">LOA Requests</button>
             <button onclick="switchPage('management', this)" id="nav-mgmt" class="nav-item hidden" style="color: var(--gold);">Management HQ</button>
         </div>
         <div style="padding: 1rem; border-top: 1px solid var(--border);">
@@ -90,16 +90,34 @@
                 <div class="panel">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Employee</th>
-                                <th>Rank</th>
-                                <th>Status</th>
-                                <th>Total Hours</th>
-                            </tr>
+                            <tr><th>Employee</th><th>Rank</th><th>Status</th><th>Total Hours</th></tr>
                         </thead>
-                        <tbody id="directory-body">
-                            <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-                        </tbody>
+                        <tbody id="directory-body"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- NEW LOA PAGE -->
+            <div id="page-loa" class="page">
+                <h2 class="page-title">Leave of Absence (LOA)</h2>
+                
+                <div class="panel">
+                    <h3 style="margin-bottom: 1rem;">Submit Request</h3>
+                    <div style="display: flex; gap: 1rem;">
+                        <input type="date" id="loa-start">
+                        <input type="date" id="loa-end">
+                    </div>
+                    <textarea id="loa-reason" rows="2" placeholder="Reason for leave..."></textarea>
+                    <button onclick="submitLOA()" class="btn">Submit Request</button>
+                </div>
+
+                <div class="panel">
+                    <h3 style="margin-bottom: 1rem;">Request History</h3>
+                    <table>
+                        <thead>
+                            <tr><th>Submitted</th><th>Dates</th><th>Reason</th><th>Status</th></tr>
+                        </thead>
+                        <tbody id="loa-body"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -108,28 +126,7 @@
                 <h2 class="page-title">Management Headquarters</h2>
                 <div class="panel">
                     <h3 style="margin-bottom: 1rem; color: var(--gold);">Personnel Action</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Enter a Discord ID to manage this user.</p>
-                    
-                    <input type="text" id="mgmt-target-id" placeholder="Target Discord ID (e.g. 1234567890)">
-                    
-                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                        <select id="mgmt-rank">
-                            <option value="Junior Operator">Junior Operator</option>
-                            <option value="Operator">Operator</option>
-                            <option value="Senior Operator">Senior Operator</option>
-                            <option value="Specialist">Specialist</option>
-                            <option value="Crew Supervisor">Crew Supervisor</option>
-                            <option value="Field Supervisor">Field Supervisor</option>
-                            <option value="Management Team">Management Team</option>
-                            <option value="Executive Board">Executive Board</option>
-                        </select>
-                        <button onclick="mgmtAction('Promote')" class="btn btn-green" style="width: 200px;">Promote</button>
-                    </div>
-
-                    <div style="display: flex; gap: 1rem;">
-                        <button onclick="mgmtAction('Suspend')" class="btn btn-red" style="flex: 1;">Suspend User</button>
-                        <button onclick="mgmtAction('Reinstate')" class="btn" style="flex: 1;">Reinstate User</button>
-                    </div>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Manage users via Discord commands or wait for the next website update.</p>
                 </div>
             </div>
         </div>
@@ -145,6 +142,7 @@
             if (btn) btn.classList.add('active');
             
             if (pageId === 'directory') loadDirectory();
+            if (pageId === 'loa') loadLOA();
         }
 
         async function init() {
@@ -156,9 +154,7 @@
             document.getElementById('user-rank').innerText = user.rank;
             document.getElementById('user-avatar').src = user.avatar_url;
 
-            if (user.rankLevel >= 7) {
-                document.getElementById('nav-mgmt').classList.remove('hidden');
-            }
+            if (user.rankLevel >= 7) document.getElementById('nav-mgmt').classList.remove('hidden');
         }
 
         async function loadDirectory() {
@@ -177,24 +173,45 @@
             `).join('');
         }
 
-        async function mgmtAction(action) {
-            const targetId = document.getElementById('mgmt-target-id').value;
-            const value = action === 'Promote' ? document.getElementById('mgmt-rank').value : '';
+        // --- LOA LOGIC ---
+        async function submitLOA() {
+            const startDate = document.getElementById('loa-start').value;
+            const endDate = document.getElementById('loa-end').value;
+            const reason = document.getElementById('loa-reason').value;
             
-            if (!targetId) return alert("Please enter a Discord ID.");
+            if (!startDate || !endDate || !reason) return alert("Fill out all fields.");
             
-            const res = await fetch('/api/management/action', {
+            const res = await fetch('/api/loa/submit', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ targetId, action, value })
+                body: JSON.stringify({ startDate, endDate, reason })
             });
             
             if (res.ok) {
-                alert(`${action} successful!`);
-                document.getElementById('mgmt-target-id').value = '';
-            } else {
-                const err = await res.json();
-                alert(`Failed: ${err.error}`);
+                alert("LOA Request Submitted!");
+                document.getElementById('loa-start').value = '';
+                document.getElementById('loa-end').value = '';
+                document.getElementById('loa-reason').value = '';
+                loadLOA();
             }
+        }
+
+        async function loadLOA() {
+            const res = await fetch('/api/loa');
+            const loas = await res.json();
+            
+            if (loas.length === 0) {
+                document.getElementById('loa-body').innerHTML = '<tr><td colspan="4" style="text-align:center;">No requests found.</td></tr>';
+                return;
+            }
+
+            document.getElementById('loa-body').innerHTML = loas.map(l => `
+                <tr>
+                    <td>${new Date(l.submitted_at).toLocaleDateString()}</td>
+                    <td>${l.startDate} to ${l.endDate}</td>
+                    <td>${l.reason}</td>
+                    <td><span class="status ${l.status === 'Approved' ? 'status-active' : l.status === 'Denied' ? 'status-suspended' : 'status-pending'}">${l.status}</span></td>
+                </tr>
+            `).join('');
         }
 
         init();
