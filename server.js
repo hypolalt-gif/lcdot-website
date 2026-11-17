@@ -8,7 +8,6 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
-
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
@@ -36,6 +35,9 @@ async function startServer() {
 
         app.use('/auth', require('./routes/auth')(db));
 
+        // Health check for UptimeRobot
+        app.get('/api/health', (req, res) => res.send('OK'));
+
         app.get('/dashboard', (req, res) => {
             if (!req.session.user) return res.redirect('/');
             res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -46,71 +48,38 @@ async function startServer() {
             res.json(req.session.user);
         });
 
+        // --- DIRECTOR PANEL APIS ---
+        app.get('/api/director/active-shifts', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
+            const active = await db.collection('active_shifts').find().toArray();
+            res.json(active);
+        });
+
+        app.post('/api/director/force-end', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
+            const { shiftId, userId } = req.body;
+            
+            const activeShift = await db.collection('active_shifts').findOne({ _id: require('mongodb').ObjectId(shiftId) });
+            if (activeShift) {
+                const totalMs = new Date() - new Date(activeShift.startTime) - (activeShift.totalPausedMs || 0);
+                await db.collection('completed_shifts').insertOne({
+                    userId: activeShift.userId, username: activeShift.username, type: activeShift.type, startTime: activeShift.startTime, endTime: new Date(), durationMs: totalMs, status: 'Completed'
+                });
+                await db.collection('active_shifts').deleteOne({ _id: activeShift._id });
+                
+                const bot = require('./bot/bot');
+                try {
+                    const member = await bot.guilds.cache.get(process.env.GUILD_ID).members.fetch(userId);
+                    if (member) await member.roles.remove(process.env.ROLE_ON_DUTY);
+                } catch(e) {}
+            }
+            res.json({ success: true });
+        });
+
         app.get('/api/directory', async (req, res) => {
             if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
             const users = await db.collection('users').find().sort({ rank_level: -1, username: 1 }).toArray();
             res.json(users);
-        });
-
-        // --- LOA APIS ---
-        app.get('/api/loa', async (req, res) => {
-            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
-            // Management sees all, Employees see their own
-            let query = req.session.user.rankLevel < 7 ? { user_id: req.session.user.id } : {};
-            const requests = await db.collection('loa_requests').find(query).sort({ submitted_at: -1 }).toArray();
-            res.json(requests);
-        });
-
-        app.post('/api/loa/submit', async (req, res) => {
-            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
-            const { startDate, endDate, reason } = req.body;
-            
-            const request = {
-                user_id: req.session.user.id,
-                username: req.session.user.username,
-                startDate, endDate, reason,
-                status: 'Pending',
-                submitted_at: new Date()
-            };
-            
-            const result = await db.collection('loa_requests').insertOne(request);
-            
-            // Trigger Discord Notification
-            try {
-                const bot = require('./bot/bot');
-                const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
-                const channel = await bot.channels.fetch(process.env.CHANNEL_LOA);
-                
-                if (channel) {
-                    const embed = new EmbedBuilder()
-                        .setColor('#18181b')
-                        .setTitle('📝 LOA Request')
-                        .addFields(
-                            { name: 'Employee', value: `<@${req.session.user.id}>`, inline: true },
-                            { name: 'Status', value: 'Pending', inline: true },
-                            { name: 'Start Date', value: startDate, inline: true },
-                            { name: 'End Date', value: endDate, inline: true },
-                            { name: 'Reason', value: reason }
-                        )
-                        .setTimestamp();
-
-                    const row = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId(`approve_loa_${result.insertedId}`).setLabel('Approve LOA').setStyle(ButtonStyle.Success),
-                        new ButtonBuilder().setCustomId(`deny_loa_${result.insertedId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
-                    );
-
-                    await channel.send({ embeds: [embed], components: [row] });
-                }
-            } catch (err) { console.error("Could not send LOA to Discord:", err); }
-
-            res.json({ success: true });
-        });
-
-        // --- PROMOTIONS API (From previous step) ---
-        app.post('/api/management/action', async (req, res) => {
-            if (!req.session.user || req.session.user.rankLevel < 7) return res.status(403).json({ error: 'Management+ Only' });
-            // (Keep your existing logic here)
-            res.json({ success: true });
         });
 
         const PORT = process.env.PORT || 3000;

@@ -38,52 +38,66 @@ bot.on('interactionCreate', async interaction => {
         if (interaction.isButton()) {
             const db = global.db;
             const customId = interaction.customId;
+            const userId = interaction.user.id;
 
-            // --- LOA HANDLING ---
-            if (customId.startsWith('approve_loa_') || customId.startsWith('deny_loa_')) {
+            // --- SHIFT BUTTONS ---
+            if (customId.startsWith('shift_')) {
                 await interaction.deferUpdate();
-                const isApprove = customId.startsWith('approve_loa_');
-                const requestId = customId.split('_')[2];
+                const action = customId.split('_')[1];
+                const shiftType = customId.split('_')[2] || null;
 
-                const requestData = await db.collection('loa_requests').findOne({ _id: new ObjectId(requestId) });
-                if (!requestData || requestData.status !== 'Pending') return;
+                let activeShift = await db.collection('active_shifts').findOne({ userId });
 
-                const newStatus = isApprove ? 'Approved' : 'Denied';
-                await db.collection('loa_requests').updateOne({ _id: new ObjectId(requestId) }, { $set: { status: newStatus } });
-
-                // Disable buttons
-                const disabledRow = new ActionRowBuilder().addComponents(
-                    new ButtonBuilder().setCustomId('d1').setLabel('Approve LOA').setStyle(ButtonStyle.Success).setDisabled(true),
-                    new ButtonBuilder().setCustomId('d2').setLabel('Deny').setStyle(ButtonStyle.Danger).setDisabled(true)
-                );
+                if (action === 'start') {
+                    if (activeShift) return;
+                    await db.collection('active_shifts').insertOne({
+                        userId, username: interaction.user.username, type: shiftType, startTime: new Date(), pausedTime: null, totalPausedMs: 0, status: 'Active'
+                    });
+                    await interaction.guild.members.fetch(userId).then(m => m.roles.add(process.env.ROLE_ON_DUTY)).catch(console.error);
+                } 
                 
-                const updatedEmbed = EmbedBuilder.from(interaction.message.embeds[0])
-                    .setColor(isApprove ? '#22c55e' : '#ef4444')
-                    .setFooter({ text: `Processed by ${interaction.user.username}` });
-
-                await interaction.message.edit({ embeds: [updatedEmbed], components: [disabledRow] });
-
-                const targetMember = await interaction.guild.members.fetch(requestData.user_id);
-
-                if (isApprove) {
-                    await targetMember.roles.add(process.env.ROLE_LOA).catch(console.error);
-                    try {
-                        await targetMember.send({ embeds: [
-                            new EmbedBuilder().setColor('#22c55e').setTitle('LOA Approved').setDescription(`Your Leave of Absence request from **${requestData.startDate}** to **${requestData.endDate}** has been **Approved**. The LOA role has been applied to your account.`)
-                        ]});
-                    } catch (e) { console.log("Could not DM user."); }
-                } else {
-                    try {
-                        await targetMember.send({ embeds: [
-                            new EmbedBuilder().setColor('#ef4444').setTitle('LOA Denied').setDescription(`Your Leave of Absence request from **${requestData.startDate}** to **${requestData.endDate}** has been **Denied**. Please contact a supervisor for more information.`)
-                        ]});
-                    } catch (e) { console.log("Could not DM user."); }
+                if (action === 'pause' && activeShift) {
+                    if (activeShift.status === 'Paused') {
+                        // Resume
+                        const pausedDuration = new Date() - new Date(activeShift.pausedTime);
+                        await db.collection('active_shifts').updateOne({ _id: activeShift._id }, { $set: { status: 'Active', pausedTime: null }, $inc: { totalPausedMs: pausedDuration } });
+                    } else {
+                        // Pause
+                        await db.collection('active_shifts').updateOne({ _id: activeShift._id }, { $set: { status: 'Paused', pausedTime: new Date() } });
+                    }
+                } 
+                
+                if (action === 'end' && activeShift) {
+                    const endTime = new Date();
+                    const totalMs = endTime - new Date(activeShift.startTime) - (activeShift.totalPausedMs || 0);
+                    
+                    await db.collection('completed_shifts').insertOne({
+                        userId, username: interaction.user.username, type: activeShift.type, startTime: activeShift.startTime, endTime, durationMs: totalMs, status: 'Completed'
+                    });
+                    await db.collection('active_shifts').deleteOne({ _id: activeShift._id });
+                    await interaction.guild.members.fetch(userId).then(m => m.roles.remove(process.env.ROLE_ON_DUTY)).catch(console.error);
                 }
+
+                // Update UI
+                activeShift = await db.collection('active_shifts').findOne({ userId });
+                const isRunning = !!activeShift;
+                const isPaused = activeShift && activeShift.status === 'Paused';
+
+                const row = new ActionRowBuilder().addComponents(
+                    new ButtonBuilder().setCustomId(`shift_start_${shiftType || 'Regular'}`).setLabel('Start').setStyle(ButtonStyle.Success).setEmoji('⏱️').setDisabled(isRunning),
+                    new ButtonBuilder().setCustomId(`shift_pause`).setLabel('Resume').setStyle(ButtonStyle.Primary).setEmoji('▶️').setDisabled(!isRunning || !isPaused),
+                    new ButtonBuilder().setCustomId(`shift_pause`).setLabel('Pause').setStyle(ButtonStyle.Primary).setEmoji('⏸️').setDisabled(!isRunning || isPaused),
+                    new ButtonBuilder().setCustomId(`shift_end`).setLabel('End').setStyle(ButtonStyle.Danger).setEmoji('⏹️').setDisabled(!isRunning)
+                );
+
+                // Remove the duplicate pause button depending on state
+                if (isPaused) row.components.splice(2, 1);
+                else row.components.splice(1, 1);
+
+                await interaction.editReply({ components: [row] });
             }
         }
-    } catch (error) {
-        console.error("Interaction Error:", error);
-    }
+    } catch (error) { console.error("Interaction Error:", error); }
 });
 
 bot.login(process.env.BOT_TOKEN).catch(err => console.error("Discord Login Error:", err));
