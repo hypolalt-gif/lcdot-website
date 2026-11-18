@@ -85,18 +85,33 @@ async function startServer() {
             res.json(req.session.user);
         });
 
-        // Profile API
-        app.get('/api/profile/:id?', requireAuth, async (req, res) => {
-            const targetId = req.params.id || req.session.user.id;
+        // --- FIXED PROFILE ROUTES ---
+        // Express 5 does not allow optional parameters like :id?, so we split them.
+
+        // 1. Get own profile
+        app.get('/api/profile', requireAuth, async (req, res) => {
+            const targetId = req.session.user.id;
+            const user = await db.collection('users').findOne({ id: targetId });
+            if (!user) return res.status(404).json({ error: 'User not found' });
             
-            // Employees can only view their own profile unless they are Supervisor+
+            // Get related data
+            const loas = await db.collection('loa_requests').find({ user_id: targetId }).toArray();
+            const shifts = await db.collection('completed_shifts').find({ userId: targetId }).sort({ endTime: -1 }).limit(10).toArray();
+            
+            res.json({ user, loas, shifts });
+        });
+
+        // 2. Get specific profile by ID (Requires Supervisor+)
+        app.get('/api/profile/:id', requireAuth, async (req, res) => {
+            const targetId = req.params.id;
+            
             if (targetId !== req.session.user.id && req.session.user.rankLevel < 6) {
                 return res.status(403).json({ error: 'Access Denied' });
             }
 
             const user = await db.collection('users').findOne({ id: targetId });
             if (!user) return res.status(404).json({ error: 'User not found' });
-
+            
             const loas = await db.collection('loa_requests').find({ user_id: targetId }).toArray();
             const shifts = await db.collection('completed_shifts').find({ userId: targetId }).sort({ endTime: -1 }).limit(10).toArray();
             
