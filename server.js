@@ -28,7 +28,7 @@ async function startServer() {
         
         console.log('✅ Connected to MongoDB Atlas');
 
-        // 2. Create Database Indexes (Phase 1 Schema Constraints)
+        // 2. Create Database Indexes
         await db.collection('users').createIndex({ id: 1 }, { unique: true });
         await db.collection('active_shifts').createIndex({ userId: 1 });
         await db.collection('completed_shifts').createIndex({ userId: 1 });
@@ -38,7 +38,7 @@ async function startServer() {
         // 3. Start Discord Bot
         require('./bot/bot');
 
-        // 4. Setup Sessions (Keep users logged in for 30 days)
+        // 4. Setup Sessions
         app.use(session({ 
             secret: process.env.SESSION_SECRET || 'fallback_secret',
             resave: false, 
@@ -70,17 +70,9 @@ async function startServer() {
             next();
         };
 
-        const requireOOS = (req, res, next) => {
-            if (!req.session.user || !req.session.user.isOOS) {
-                // Return 404 to hide OOS existence from regular users
-                return res.status(404).json({ error: 'Not found' });
-            }
-            next();
-        };
-
         // --- API ROUTES ---
 
-        // Health Check for UptimeRobot
+        // Health Check
         app.get('/api/health', (req, res) => res.send('OK'));
 
         // Page Routes
@@ -93,11 +85,77 @@ async function startServer() {
             res.json(req.session.user);
         });
 
-        // Directory API (Requires Supervisor+ / Level 6)
+        // Profile API
+        app.get('/api/profile/:id?', requireAuth, async (req, res) => {
+            const targetId = req.params.id || req.session.user.id;
+            
+            // Employees can only view their own profile unless they are Supervisor+
+            if (targetId !== req.session.user.id && req.session.user.rankLevel < 6) {
+                return res.status(403).json({ error: 'Access Denied' });
+            }
+
+            const user = await db.collection('users').findOne({ id: targetId });
+            if (!user) return res.status(404).json({ error: 'User not found' });
+
+            const loas = await db.collection('loa_requests').find({ user_id: targetId }).toArray();
+            const shifts = await db.collection('completed_shifts').find({ userId: targetId }).sort({ endTime: -1 }).limit(10).toArray();
+            
+            res.json({ user, loas, shifts });
+        });
+
+        // Directory API
         app.get('/api/directory', requireAuth, async (req, res) => {
             if (req.session.user.rankLevel < 6) return res.status(403).json({ error: 'Access Denied' });
             const users = await db.collection('users').find().sort({ rank_level: -1, username: 1 }).toArray();
             res.json(users);
+        });
+
+        // Management Action API (Promote/Suspend)
+        app.post('/api/management/action', requireManagement, async (req, res) => {
+            const { targetId, action, value } = req.body;
+            const target = await db.collection('users').findOne({ id: targetId });
+            if (!target) return res.status(404).json({ error: 'User not found.' });
+
+            const rankConfig = {
+                "Junior Operator": { level: 1, role: process.env.ROLE_JUNIOR },
+                "Operator": { level: 2, role: process.env.ROLE_OPERATOR },
+                "Senior Operator": { level: 3, role: process.env.ROLE_SENIOR },
+                "Specialist": { level: 4, role: process.env.ROLE_SPECIALIST },
+                "Crew Supervisor": { level: 5, role: process.env.ROLE_CREW },
+                "Field Supervisor": { level: 6, role: process.env.ROLE_FIELD },
+                "Management Team": { level: 7, role: process.env.ROLE_MGMT },
+                "Executive Board": { level: 8, role: process.env.ROLE_EXEC }
+            };
+
+            try {
+                const bot = require('./bot/bot');
+                const guild = await bot.guilds.fetch(process.env.GUILD_ID);
+                const member = await guild.members.fetch(targetId);
+
+                if (action === 'Promote') {
+                    const newConfig = rankConfig[value];
+                    const oldConfig = Object.values(rankConfig).find(r => r.level === target.rank_level);
+                    
+                    if (oldConfig && oldConfig.role && member.roles.cache.has(oldConfig.role)) {
+                        await member.roles.remove(oldConfig.role).catch(()=>{});
+                    }
+                    if (newConfig && newConfig.role) {
+                        await member.roles.add(newConfig.role);
+                    }
+                    await db.collection('users').updateOne({ id: targetId }, { $set: { rank: value, rank_level: newConfig.level } });
+                    
+                } else if (action === 'Suspend') {
+                    await db.collection('users').updateOne({ id: targetId }, { $set: { status: 'Suspended' } });
+                    await member.roles.add(process.env.ROLE_SUSPENDED).catch(()=>{});
+                } else if (action === 'Reinstate') {
+                    await db.collection('users').updateOne({ id: targetId }, { $set: { status: 'Active' } });
+                    await member.roles.remove(process.env.ROLE_SUSPENDED).catch(()=>{});
+                }
+                res.json({ success: true });
+            } catch (error) { 
+                console.error(error);
+                res.status(500).json({ error: 'Discord Action Failed. Check bot permissions.' }); 
+            }
         });
 
         // LOA APIs
@@ -109,45 +167,33 @@ async function startServer() {
 
         app.post('/api/loa/submit', requireAuth, async (req, res) => {
             const { startDate, endDate, reason } = req.body;
-            
             const request = {
-                user_id: req.session.user.id,
-                username: req.session.user.username,
-                startDate, endDate, reason,
-                status: 'Pending',
-                submitted_at: new Date()
+                user_id: req.session.user.id, username: req.session.user.username,
+                startDate, endDate, reason, status: 'Pending', submitted_at: new Date()
             };
-            
             const result = await db.collection('loa_requests').insertOne(request);
             
-            // Trigger Discord Notification
+            // Discord Notification
             try {
                 const bot = require('./bot/bot');
                 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
                 const channel = await bot.channels.fetch(process.env.CHANNEL_LOA);
-                
                 if (channel) {
-                    const embed = new EmbedBuilder()
-                        .setColor('#18181b')
-                        .setTitle('📝 LOA Request')
+                    const embed = new EmbedBuilder().setColor('#18181b').setTitle('📝 LOA Request')
                         .addFields(
                             { name: 'Employee', value: `<@${req.session.user.id}>`, inline: true },
                             { name: 'Status', value: 'Pending', inline: true },
                             { name: 'Start Date', value: startDate, inline: true },
                             { name: 'End Date', value: endDate, inline: true },
                             { name: 'Reason', value: reason }
-                        )
-                        .setTimestamp();
-
+                        ).setTimestamp();
                     const row = new ActionRowBuilder().addComponents(
-                        new ButtonBuilder().setCustomId(`approve_loa_${result.insertedId}`).setLabel('Approve LOA').setStyle(ButtonStyle.Success),
+                        new ButtonBuilder().setCustomId(`approve_loa_${result.insertedId}`).setLabel('Approve').setStyle(ButtonStyle.Success),
                         new ButtonBuilder().setCustomId(`deny_loa_${result.insertedId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
                     );
-
                     await channel.send({ embeds: [embed], components: [row] });
                 }
-            } catch (err) { console.error("Could not send LOA to Discord:", err); }
-
+            } catch (err) { console.error(err); }
             res.json({ success: true });
         });
 
@@ -184,22 +230,14 @@ async function startServer() {
 
         app.post('/api/director/oos-access', requireDirector, async (req, res) => {
             const { targetId, action, oosRank } = req.body;
-
             if (action === 'grant') {
-                await db.collection('users').updateOne(
-                    { id: targetId },
-                    { $set: { isOOS: true, oos_rank: oosRank } }
-                );
+                await db.collection('users').updateOne({ id: targetId }, { $set: { isOOS: true, oos_rank: oosRank } });
             } else {
-                await db.collection('users').updateOne(
-                    { id: targetId },
-                    { $set: { isOOS: false, oos_rank: null } }
-                );
+                await db.collection('users').updateOne({ id: targetId }, { $set: { isOOS: false, oos_rank: null } });
             }
             res.json({ success: true });
         });
 
-        // Start Server
         const PORT = process.env.PORT || 3000;
         app.listen(PORT, '0.0.0.0', () => console.log(`✅ Web Server running on port ${PORT}`));
 
