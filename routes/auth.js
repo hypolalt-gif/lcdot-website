@@ -35,6 +35,7 @@ module.exports = (db) => {
                 return res.status(403).send("Access Denied. You must be in the Lakeview City DOT Discord server."); 
             }
 
+            // 1. Determine Main DOT Rank
             let rank = "Probationary", rankLevel = 0;
             if (roles.includes(process.env.ROLE_EXEC)) { rank = "Executive Board"; rankLevel = 8; }
             else if (roles.includes(process.env.ROLE_MGMT)) { rank = "Management Team"; rankLevel = 7; }
@@ -47,16 +48,32 @@ module.exports = (db) => {
 
             const avatarUrl = userResponse.data.avatar ? `https://cdn.discordapp.com/avatars/${userResponse.data.id}/${userResponse.data.avatar}.png` : `https://cdn.discordapp.com/embed/avatars/0.png`;
             
+            // 2. Check if user exists in DB to get their OOS status
+            const existingUser = await db.collection('users').findOne({ id: userResponse.data.id });
+            const isOOS = existingUser ? existingUser.isOOS : false;
+            const oosRank = existingUser ? existingUser.oos_rank : null;
+
+            // 3. Save/Update user in DB
             await db.collection('users').updateOne(
                 { id: userResponse.data.id }, 
                 { 
                     $set: { username: userResponse.data.username, rank, rank_level: rankLevel, avatar_url: avatarUrl, status: 'Active' }, 
-                    $setOnInsert: { total_minutes: 0, weekly_minutes: 0, joined_at: new Date() } 
+                    $setOnInsert: { total_minutes: 0, joined_at: new Date(), isOOS: false } 
                 }, 
                 { upsert: true }
             );
             
-            req.session.user = { id: userResponse.data.id, username: userResponse.data.username, rank, rankLevel, avatar_url: avatarUrl };
+            // 4. Set secure session
+            req.session.user = { 
+                id: userResponse.data.id, 
+                username: userResponse.data.username, 
+                rank, 
+                rankLevel, 
+                avatar_url: avatarUrl,
+                isOOS, 
+                oosRank 
+            };
+            
             res.redirect('/dashboard');
         } catch (error) { 
             console.error(error);
