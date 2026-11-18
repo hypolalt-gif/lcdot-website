@@ -2,12 +2,14 @@ require('dotenv').config();
 const express = require('express');
 const session = require('express-session');
 const { MongoStore } = require('connect-mongo');
-const { MongoClient } = require('mongodb');
+const { MongoClient, ObjectId } = require('mongodb');
 const path = require('path');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 
 const app = express();
+
+// Security Middleware
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
@@ -18,14 +20,17 @@ let db;
 
 async function startServer() {
     try {
+        // 1. Connect to Database
         const client = new MongoClient(process.env.MONGODB_URI);
         await client.connect();
         db = client.db('lcdot');
-        global.db = db; 
+        global.db = db; // Make DB available to the Discord bot
         console.log('✅ Connected to MongoDB Atlas');
 
+        // 2. Start Discord Bot
         require('./bot/bot');
 
+        // 3. Setup Sessions
         app.use(session({ 
             secret: process.env.SESSION_SECRET || 'fallback_secret',
             resave: false, saveUninitialized: false, 
@@ -33,11 +38,13 @@ async function startServer() {
             cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 30 } 
         }));
 
+        // 4. Auth Routes
         app.use('/auth', require('./routes/auth')(db));
 
-        // Health check for UptimeRobot
+        // 5. Health Check (For UptimeRobot)
         app.get('/api/health', (req, res) => res.send('OK'));
 
+        // 6. Page Routes
         app.get('/dashboard', (req, res) => {
             if (!req.session.user) return res.redirect('/');
             res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -48,7 +55,67 @@ async function startServer() {
             res.json(req.session.user);
         });
 
-        // --- DIRECTOR PANEL APIS ---
+        // 7. Directory API
+        app.get('/api/directory', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            const users = await db.collection('users').find().sort({ rank_level: -1, username: 1 }).toArray();
+            res.json(users);
+        });
+
+        // 8. LOA APIs
+        app.get('/api/loa', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            let query = req.session.user.rankLevel < 7 ? { user_id: req.session.user.id } : {};
+            const requests = await db.collection('loa_requests').find(query).sort({ submitted_at: -1 }).toArray();
+            res.json(requests);
+        });
+
+        app.post('/api/loa/submit', async (req, res) => {
+            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
+            const { startDate, endDate, reason } = req.body;
+            
+            const request = {
+                user_id: req.session.user.id,
+                username: req.session.user.username,
+                startDate, endDate, reason,
+                status: 'Pending',
+                submitted_at: new Date()
+            };
+            
+            const result = await db.collection('loa_requests').insertOne(request);
+            
+            // Trigger Discord Notification
+            try {
+                const bot = require('./bot/bot');
+                const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
+                const channel = await bot.channels.fetch(process.env.CHANNEL_LOA);
+                
+                if (channel) {
+                    const embed = new EmbedBuilder()
+                        .setColor('#18181b')
+                        .setTitle('📝 LOA Request')
+                        .addFields(
+                            { name: 'Employee', value: `<@${req.session.user.id}>`, inline: true },
+                            { name: 'Status', value: 'Pending', inline: true },
+                            { name: 'Start Date', value: startDate, inline: true },
+                            { name: 'End Date', value: endDate, inline: true },
+                            { name: 'Reason', value: reason }
+                        )
+                        .setTimestamp();
+
+                    const row = new ActionRowBuilder().addComponents(
+                        new ButtonBuilder().setCustomId(`approve_loa_${result.insertedId}`).setLabel('Approve LOA').setStyle(ButtonStyle.Success),
+                        new ButtonBuilder().setCustomId(`deny_loa_${result.insertedId}`).setLabel('Deny').setStyle(ButtonStyle.Danger)
+                    );
+
+                    await channel.send({ embeds: [embed], components: [row] });
+                }
+            } catch (err) { console.error("Could not send LOA to Discord:", err); }
+
+            res.json({ success: true });
+        });
+
+        // 9. Director Panel APIs
         app.get('/api/director/active-shifts', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
             const active = await db.collection('active_shifts').find().toArray();
@@ -59,7 +126,7 @@ async function startServer() {
             if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
             const { shiftId, userId } = req.body;
             
-            const activeShift = await db.collection('active_shifts').findOne({ _id: require('mongodb').ObjectId(shiftId) });
+            const activeShift = await db.collection('active_shifts').findOne({ _id: new ObjectId(shiftId) });
             if (activeShift) {
                 const totalMs = new Date() - new Date(activeShift.startTime) - (activeShift.totalPausedMs || 0);
                 await db.collection('completed_shifts').insertOne({
@@ -76,10 +143,21 @@ async function startServer() {
             res.json({ success: true });
         });
 
-        app.get('/api/directory', async (req, res) => {
-            if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
-            const users = await db.collection('users').find().sort({ rank_level: -1, username: 1 }).toArray();
-            res.json(users);
+        app.get('/api/director/oos-users', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
+            const oos = await db.collection('users').find({ isOOS: true }).toArray();
+            res.json(oos);
+        });
+
+        app.post('/api/director/oos-access', async (req, res) => {
+            if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
+            const { targetId, action } = req.body;
+
+            await db.collection('users').updateOne(
+                { id: targetId },
+                { $set: { isOOS: action === 'grant' } }
+            );
+            res.json({ success: true });
         });
 
         const PORT = process.env.PORT || 3000;
