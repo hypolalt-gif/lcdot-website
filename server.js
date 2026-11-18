@@ -9,7 +9,6 @@ const rateLimit = require('express-rate-limit');
 
 const app = express();
 
-// Security Middleware
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 1000 }));
@@ -20,17 +19,14 @@ let db;
 
 async function startServer() {
     try {
-        // 1. Connect to Database
         const client = new MongoClient(process.env.MONGODB_URI);
         await client.connect();
         db = client.db('lcdot');
-        global.db = db; // Make DB available to the Discord bot
+        global.db = db; 
         console.log('✅ Connected to MongoDB Atlas');
 
-        // 2. Start Discord Bot
         require('./bot/bot');
 
-        // 3. Setup Sessions
         app.use(session({ 
             secret: process.env.SESSION_SECRET || 'fallback_secret',
             resave: false, saveUninitialized: false, 
@@ -38,13 +34,10 @@ async function startServer() {
             cookie: { secure: false, httpOnly: true, maxAge: 1000 * 60 * 60 * 24 * 30 } 
         }));
 
-        // 4. Auth Routes
         app.use('/auth', require('./routes/auth')(db));
 
-        // 5. Health Check (For UptimeRobot)
         app.get('/api/health', (req, res) => res.send('OK'));
 
-        // 6. Page Routes
         app.get('/dashboard', (req, res) => {
             if (!req.session.user) return res.redirect('/');
             res.sendFile(path.join(__dirname, 'public', 'dashboard.html'));
@@ -55,14 +48,12 @@ async function startServer() {
             res.json(req.session.user);
         });
 
-        // 7. Directory API
         app.get('/api/directory', async (req, res) => {
             if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
             const users = await db.collection('users').find().sort({ rank_level: -1, username: 1 }).toArray();
             res.json(users);
         });
 
-        // 8. LOA APIs
         app.get('/api/loa', async (req, res) => {
             if (!req.session.user) return res.status(401).json({ error: 'Unauthorized' });
             let query = req.session.user.rankLevel < 7 ? { user_id: req.session.user.id } : {};
@@ -75,16 +66,12 @@ async function startServer() {
             const { startDate, endDate, reason } = req.body;
             
             const request = {
-                user_id: req.session.user.id,
-                username: req.session.user.username,
-                startDate, endDate, reason,
-                status: 'Pending',
-                submitted_at: new Date()
+                user_id: req.session.user.id, username: req.session.user.username,
+                startDate, endDate, reason, status: 'Pending', submitted_at: new Date()
             };
             
             const result = await db.collection('loa_requests').insertOne(request);
             
-            // Trigger Discord Notification
             try {
                 const bot = require('./bot/bot');
                 const { EmbedBuilder, ActionRowBuilder, ButtonBuilder, ButtonStyle } = require('discord.js');
@@ -115,7 +102,6 @@ async function startServer() {
             res.json({ success: true });
         });
 
-        // 9. Director Panel APIs
         app.get('/api/director/active-shifts', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
             const active = await db.collection('active_shifts').find().toArray();
@@ -143,6 +129,7 @@ async function startServer() {
             res.json({ success: true });
         });
 
+        // --- UPDATED OOS MANAGEMENT ROUTES ---
         app.get('/api/director/oos-users', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
             const oos = await db.collection('users').find({ isOOS: true }).toArray();
@@ -151,12 +138,19 @@ async function startServer() {
 
         app.post('/api/director/oos-access', async (req, res) => {
             if (!req.session.user || req.session.user.rankLevel < 8) return res.status(403).json({ error: 'Director Only' });
-            const { targetId, action } = req.body;
+            const { targetId, action, oosRank } = req.body;
 
-            await db.collection('users').updateOne(
-                { id: targetId },
-                { $set: { isOOS: action === 'grant' } }
-            );
+            if (action === 'grant') {
+                await db.collection('users').updateOne(
+                    { id: targetId },
+                    { $set: { isOOS: true, oos_rank: oosRank } }
+                );
+            } else {
+                await db.collection('users').updateOne(
+                    { id: targetId },
+                    { $set: { isOOS: false, oos_rank: null } }
+                );
+            }
             res.json({ success: true });
         });
 

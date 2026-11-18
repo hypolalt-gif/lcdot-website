@@ -13,7 +13,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body { font-family: 'Inter', sans-serif; background: var(--bg-dark); color: var(--text-main); display: flex; height: 100vh; overflow: hidden; }
 
-        /* Sidebar */
         .sidebar { width: 260px; background: var(--sidebar); border-right: 1px solid var(--border); display: flex; flex-direction: column; }
         .brand { padding: 1.5rem; border-bottom: 1px solid var(--border); text-align: center; }
         .brand h1 { font-size: 1rem; color: var(--gold); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; }
@@ -25,7 +24,6 @@
         .logout-btn { display: block; text-align: center; background: rgba(239, 68, 68, 0.1); color: var(--danger); padding: 0.6rem; text-decoration: none; font-size: 0.85rem; border: 1px solid rgba(239, 68, 68, 0.2); font-weight: 600; border-radius: 4px; transition: 0.2s; }
         .logout-btn:hover { background: var(--danger); color: white; }
 
-        /* Main Content */
         .main { flex: 1; display: flex; flex-direction: column; overflow-y: auto; }
         .header { padding: 1rem 2rem; border-bottom: 1px solid var(--border); background: var(--bg-panel); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
         .user-info { display: flex; align-items: center; gap: 1rem; }
@@ -42,13 +40,11 @@
         .panel { background: var(--bg-panel); border: 1px solid var(--border); padding: 1.5rem; margin-bottom: 1.5rem; border-radius: 4px; }
         .panel h3 { font-size: 1rem; font-weight: 600; margin-bottom: 1rem; color: var(--text-main); }
 
-        /* Tables */
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { text-align: left; padding: 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-muted); font-weight: 500; font-size: 0.8rem; text-transform: uppercase; letter-spacing: 0.5px; }
         td { padding: 0.75rem; border-bottom: 1px solid var(--border); }
         tr:hover { background: rgba(255,255,255,0.02); }
 
-        /* Forms & Buttons */
         input, select, textarea { width: 100%; padding: 0.75rem; background: var(--bg-dark); border: 1px solid var(--border); color: white; font-family: inherit; margin-bottom: 1rem; border-radius: 4px; font-size: 0.9rem; }
         input:focus, select:focus, textarea:focus { outline: none; border-color: var(--gold); }
         .btn { background: var(--gold); color: #000; border: none; padding: 0.75rem 1.5rem; font-weight: 600; cursor: pointer; border-radius: 4px; font-size: 0.9rem; transition: 0.2s; }
@@ -56,7 +52,6 @@
         .btn-green { background: var(--success); color: white; }
         .btn-red { background: var(--danger); color: white; }
         
-        /* Status Badges */
         .status { padding: 0.2rem 0.5rem; font-size: 0.75rem; font-weight: 600; border-radius: 4px; display: inline-block; }
         .status-active { background: rgba(34, 197, 94, 0.2); color: var(--success); }
         .status-suspended { background: rgba(239, 68, 68, 0.2); color: var(--danger); }
@@ -94,7 +89,6 @@
 
         <div class="content">
             
-            <!-- DASHBOARD -->
             <div id="page-dashboard" class="page active">
                 <h2 class="page-title">System Overview</h2>
                 <div class="panel">
@@ -105,30 +99,20 @@
                 </div>
             </div>
 
-            <!-- EMPLOYEE DIRECTORY -->
             <div id="page-directory" class="page">
                 <h2 class="page-title">Employee Directory</h2>
                 <div class="panel">
                     <table>
                         <thead>
-                            <tr>
-                                <th>Employee</th>
-                                <th>Rank</th>
-                                <th>Status</th>
-                                <th>Total Hours</th>
-                            </tr>
+                            <tr><th>Employee</th><th>Rank</th><th>Status</th><th>Total Hours</th></tr>
                         </thead>
-                        <tbody id="directory-body">
-                            <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-                        </tbody>
+                        <tbody id="directory-body"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- LOA SYSTEM -->
             <div id="page-loa" class="page">
                 <h2 class="page-title">Leave of Absence</h2>
-                
                 <div class="panel">
                     <h3>Submit Request</h3>
                     <div style="display: flex; gap: 1rem;">
@@ -138,26 +122,20 @@
                     <textarea id="loa-reason" rows="3" placeholder="Reason for leave..."></textarea>
                     <button onclick="submitLOA()" class="btn">Submit LOA Request</button>
                 </div>
-
                 <div class="panel">
                     <h3>Your LOA History</h3>
                     <table>
-                        <thead>
-                            <tr><th>Submitted</th><th>Dates</th><th>Reason</th><th>Status</th></tr>
-                        </thead>
-                        <tbody id="loa-body">
-                            <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-                        </tbody>
+                        <thead><tr><th>Submitted</th><th>Dates</th><th>Reason</th><th>Status</th></tr></thead>
+                        <tbody id="loa-body"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
                     </table>
                 </div>
             </div>
 
-            <!-- MANAGEMENT HQ -->
             <div id="page-management" class="page">
                 <h2 class="page-title">Management Headquarters</h2>
                 <div class="panel">
                     <h3>Personnel Management</h3>
-                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Use the Discord command <code>/promote</code> to process promotions. Website forms are coming in the next update.</p>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1rem;">Use the Discord command <code>/promote</code> to process promotions.</p>
                 </div>
             </div>
 
@@ -167,30 +145,37 @@
                 
                 <div class="panel">
                     <h3>Active Shifts</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Monitor and force-end shifts for personnel who forgot to clock out.</p>
                     <table>
                         <thead>
                             <tr><th>Employee</th><th>Shift Type</th><th>Clocked In At</th><th>Action</th></tr>
                         </thead>
-                        <tbody id="director-shifts-body">
-                            <tr><td colspan="4" style="text-align:center;">Loading...</td></tr>
-                        </tbody>
+                        <tbody id="director-shifts-body"><tr><td colspan="4" style="text-align:center;">Loading...</td></tr></tbody>
                     </table>
                 </div>
 
+                <!-- UPDATED OOS PANEL -->
                 <div class="panel">
                     <h3>OOS Access Management (Secret)</h3>
-                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Grant or revoke Internal Affairs access. This is not visible to regular members.</p>
+                    <p style="color: var(--text-muted); font-size: 0.85rem; margin-bottom: 1rem;">Grant or revoke Internal Affairs access and assign their OOS Rank.</p>
+                    
                     <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
-                        <input type="text" id="oos-target-id" placeholder="Discord ID">
-                        <button onclick="manageOOS('grant')" class="btn btn-green" style="width: 150px;">Grant</button>
-                        <button onclick="manageOOS('revoke')" class="btn btn-red" style="width: 150px;">Revoke</button>
+                        <input type="text" id="oos-target-id" placeholder="Discord ID" style="flex: 2;">
+                        <select id="oos-rank" style="flex: 1;">
+                            <option value="Agent">Agent</option>
+                            <option value="Senior Agent">Senior Agent</option>
+                            <option value="Lead Agent">Lead Agent</option>
+                            <option value="Oversight">Oversight</option>
+                        </select>
                     </div>
+                    
+                    <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                        <button onclick="manageOOS('grant')" class="btn btn-green" style="flex: 1;">Grant / Update Access</button>
+                        <button onclick="manageOOS('revoke')" class="btn btn-red" style="flex: 1;">Revoke Access</button>
+                    </div>
+
                     <table>
-                        <thead><tr><th>OOS Agent</th><th>Discord ID</th></tr></thead>
-                        <tbody id="oos-list-body">
-                            <tr><td colspan="2" style="text-align:center;">Loading...</td></tr>
-                        </tbody>
+                        <thead><tr><th>OOS Agent</th><th>Discord ID</th><th>OOS Rank</th></tr></thead>
+                        <tbody id="oos-list-body"><tr><td colspan="3" style="text-align:center;">Loading...</td></tr></tbody>
                     </table>
                 </div>
             </div>
@@ -226,19 +211,13 @@
             document.getElementById('user-rank').innerText = user.rank;
             document.getElementById('user-avatar').src = user.avatar_url;
 
-            if (user.rankLevel >= 7) {
-                document.getElementById('nav-mgmt').classList.remove('hidden');
-            }
-            if (user.rankLevel >= 8) {
-                document.getElementById('nav-director').classList.remove('hidden');
-            }
+            if (user.rankLevel >= 7) document.getElementById('nav-mgmt').classList.remove('hidden');
+            if (user.rankLevel >= 8) document.getElementById('nav-director').classList.remove('hidden');
         }
 
-        // --- DIRECTORY ---
         async function loadDirectory() {
             const res = await fetch('/api/directory');
             const users = await res.json();
-            
             document.getElementById('directory-body').innerHTML = users.map(u => `
                 <tr>
                     <td style="display:flex; align-items:center; gap:10px;">
@@ -252,7 +231,6 @@
             `).join('');
         }
 
-        // --- LOA ---
         async function submitLOA() {
             const startDate = document.getElementById('loa-start').value;
             const endDate = document.getElementById('loa-end').value;
@@ -260,10 +238,7 @@
             
             if (!startDate || !endDate || !reason) return alert("Please fill out all fields.");
             
-            const res = await fetch('/api/loa/submit', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ startDate, endDate, reason })
-            });
+            const res = await fetch('/api/loa/submit', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ startDate, endDate, reason }) });
             
             if (res.ok) {
                 alert("LOA Request Submitted Successfully!");
@@ -277,12 +252,6 @@
         async function loadLOA() {
             const res = await fetch('/api/loa');
             const loas = await res.json();
-            
-            if (loas.length === 0) {
-                document.getElementById('loa-body').innerHTML = '<tr><td colspan="4" style="text-align:center;">No LOA requests found.</td></tr>';
-                return;
-            }
-
             document.getElementById('loa-body').innerHTML = loas.map(l => `
                 <tr>
                     <td>${new Date(l.submitted_at).toLocaleDateString()}</td>
@@ -290,44 +259,27 @@
                     <td>${l.reason}</td>
                     <td><span class="status ${l.status === 'Approved' ? 'status-active' : l.status === 'Denied' ? 'status-suspended' : 'status-pending'}">${l.status}</span></td>
                 </tr>
-            `).join('');
+            `).join('') || '<tr><td colspan="4" style="text-align:center;">No LOA requests found.</td></tr>';
         }
 
-        // --- DIRECTOR PANEL ---
         async function loadDirectorPanel() {
             const res = await fetch('/api/director/active-shifts');
             if (!res.ok) return;
             const shifts = await res.json();
-            
-            if (shifts.length === 0) {
-                document.getElementById('director-shifts-body').innerHTML = '<tr><td colspan="4" style="text-align:center;">No active shifts right now.</td></tr>';
-                return;
-            }
-            
             document.getElementById('director-shifts-body').innerHTML = shifts.map(s => `
                 <tr>
                     <td><strong>${s.username}</strong></td>
                     <td><span class="status status-active">${s.type}</span></td>
                     <td>${new Date(s.startTime).toLocaleTimeString()}</td>
-                    <td>
-                        <button onclick="forceEndShift('${s._id}', '${s.userId}')" class="btn btn-red" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">
-                            Force End
-                        </button>
-                    </td>
+                    <td><button onclick="forceEndShift('${s._id}', '${s.userId}')" class="btn btn-red" style="padding: 0.3rem 0.6rem; font-size: 0.8rem;">Force End</button></td>
                 </tr>
-            `).join('');
+            `).join('') || '<tr><td colspan="4" style="text-align:center;">No active shifts right now.</td></tr>';
         }
 
         async function forceEndShift(shiftId, userId) {
-            if (!confirm("WARNING: Are you sure you want to force-end this shift? This will clock them out and remove their On-Duty role.")) return;
-            
-            const res = await fetch('/api/director/force-end', {
-                method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ shiftId, userId })
-            });
-            
-            if (res.ok) loadDirectorPanel();
-            else alert("Failed to end shift.");
+            if (!confirm("WARNING: Are you sure you want to force-end this shift?")) return;
+            await fetch('/api/director/force-end', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ shiftId, userId }) });
+            loadDirectorPanel();
         }
 
         async function loadOOSUsers() {
@@ -338,26 +290,25 @@
                 <tr>
                     <td><strong>${o.username}</strong></td>
                     <td>${o.id}</td>
+                    <td><span style="color: var(--danger); font-weight: bold;">${o.oos_rank || 'Unknown'}</span></td>
                 </tr>
-            `).join('') || '<tr><td colspan="2" style="text-align:center;">No OOS agents.</td></tr>';
+            `).join('') || '<tr><td colspan="3" style="text-align:center;">No OOS agents.</td></tr>';
         }
 
         async function manageOOS(action) {
             const targetId = document.getElementById('oos-target-id').value;
+            const oosRank = document.getElementById('oos-rank').value;
             if (!targetId) return alert("Enter ID.");
             
-            const res = await fetch('/api/director/oos-access', {
+            await fetch('/api/director/oos-access', {
                 method: 'POST', headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({ targetId, action })
+                body: JSON.stringify({ targetId, action, oosRank })
             });
             
-            if (res.ok) {
-                document.getElementById('oos-target-id').value = '';
-                loadOOSUsers();
-            }
+            document.getElementById('oos-target-id').value = '';
+            loadOOSUsers();
         }
 
-        // Start
         init();
     </script>
 </body>

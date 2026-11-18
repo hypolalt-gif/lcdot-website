@@ -10,13 +10,21 @@ module.exports = {
                 .addUserOption(opt => opt.setName('user').setDescription('The user to manage').setRequired(true))),
     
     async execute(interaction, db) {
-        // Basic permission check (Agent+)
-        if (!interaction.member.roles.cache.has(process.env.OOS_ROLE_AGENT) && !interaction.member.roles.cache.has(process.env.OOS_ROLE_OVERSIGHT)) {
+        // 1. Check Database for OOS Access (Granted via Website)
+        const dbUser = await db.collection('users').findOne({ id: interaction.user.id });
+        
+        // 2. Also check Discord Roles just in case
+        const hasDiscordRole = interaction.member.roles.cache.has(process.env.OOS_ROLE_AGENT) || 
+                               interaction.member.roles.cache.has(process.env.OOS_ROLE_LEAD) || 
+                               interaction.member.roles.cache.has(process.env.OOS_ROLE_OVERSIGHT);
+
+        // 3. Deny if they have neither
+        if (!hasDiscordRole && (!dbUser || !dbUser.isOOS)) {
             return interaction.reply({ content: '❌ You do not have OOS access.', ephemeral: true });
         }
 
         const target = interaction.options.getUser('user');
-        const refCode = Math.random().toString(36).substring(2, 8); // e.g. C6i4Ow
+        const refCode = Math.random().toString(36).substring(2, 8).toUpperCase(); // e.g. C6I4OW
 
         const embed = new EmbedBuilder()
             .setColor('#18181b')
